@@ -1,42 +1,197 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* ── Global Reset ── */
 * {
   box-sizing: border-box;
-  padding: 0;
+}
+
+html, body {
   margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* ── Overlay-specific: transparent background for OBS Browser Source ── */
+body.overlay-body {
+  background: transparent !important;
+  overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* ── Glassmorphism utility ── */
+.glass {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Number flip animation containers ── */
+.number-flip {
+  display: inline-flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.number-flip .digit {
+  display: inline-block;
+}
+
+/* ── Ball timeline badges ── */
+.ball-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.ball-dot { background: rgba(255,255,255,0.15); color: #94a3b8; }
+.ball-1 { background: rgba(255,255,255,0.2); color: #e2e8f0; }
+.ball-2 { background: rgba(59,130,246,0.3); color: #93c5fd; }
+.ball-3 { background: rgba(59,130,246,0.4); color: #93c5fd; }
+.ball-4 { background: rgba(16,185,129,0.4); color: #6ee7b7; }
+.ball-6 { background: rgba(245,158,11,0.4); color: #fcd34d; }
+.ball-wicket { background: rgba(239,68,68,0.4); color: #fca5a5; }
+.ball-wide { background: rgba(168,85,247,0.3); color: #c4b5fd; }
+.ball-noball { background: rgba(236,72,153,0.3); color: #f9a8d4; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Admin panel theme ── */
+.admin-bg {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+  min-height: 100vh;
+}
+
+/* ── Mobile panel theme ── */
+.mobile-bg {
+  background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── Tab styles ── */
+.tab-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-bottom: 2px solid #10b981;
+}
+
+.tab-inactive {
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-inactive:hover {
+  color: #94a3b8;
+  background: rgba(255,255,255,0.03);
+}
+
+/* ── Input styles ── */
+.input-field {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.input-field:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* ── Button base ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* ── Score button grid (mobile) ── */
+.score-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 24px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  user-select: none;
+  min-height: 72px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.score-btn:active {
+  transform: scale(0.92);
 }
