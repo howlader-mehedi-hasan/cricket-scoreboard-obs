@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Palette, Move, Eye, EyeOff, Save, Trash2, Plus, Layout } from 'lucide-react';
+import { Palette, Move, Eye, EyeOff, Save, Trash2, Plus, Layout, Radio, Copy, Info } from 'lucide-react';
 
-export default function StyleControl({ styleData, emit }) {
+export default function StyleControl({ styleData, emit, hostId }) {
   const [ls, setLs] = useState({
     x_offset: '50', y_offset: '85',
     primary_color: '#10b981', secondary_color: '#3b82f6',
@@ -11,6 +11,10 @@ export default function StyleControl({ styleData, emit }) {
     profiles: []
   });
   const [newProfileName, setNewProfileName] = useState('');
+
+  const overlayUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/overlay?host=${hostId}`
+    : '';
 
   useEffect(() => { if (styleData) setLs(styleData); }, [styleData]);
 
@@ -66,6 +70,31 @@ export default function StyleControl({ styleData, emit }) {
 
   return (
     <div className="space-y-5">
+      {/* Overlay URL (Quick Copy) */}
+      <div className="glass rounded-xl p-5 border-l-4 border-blue-500 shadow-xl">
+        <h4 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+          <Radio size={16} className="text-blue-400" />
+          Overlay URL for OBS
+        </h4>
+        <div className="flex items-center gap-2">
+          <input 
+            type="text" 
+            readOnly 
+            value={overlayUrl}
+            className="input-field text-xs font-mono flex-1 bg-black/20"
+          />
+          <button 
+            onClick={() => navigator.clipboard.writeText(overlayUrl)}
+            className="btn btn-secondary px-3 py-2 flex items-center gap-2 text-xs"
+          >
+            <Copy size={14} /> Copy Link
+          </button>
+        </div>
+        <p className="text-slate-500 text-[10px] mt-2 italic flex items-center gap-1">
+          <Info size={10} /> Paste this URL as a "Browser Source" in OBS to see the live scoreboard.
+        </p>
+      </div>
+
       {/* Profile Manager */}
       <div className="glass rounded-xl p-5 border-l-4 border-emerald-500 shadow-xl">
         <h4 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">

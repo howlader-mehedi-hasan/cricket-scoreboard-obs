@@ -13,7 +13,7 @@ const tabs = [
 ];
 
 export default function Admin() {
-  const { matchData, styleData, connected, emit } = useSocket();
+  const { matchData, styleData, connected, emit, hostId } = useSocket();
   const [activeTab, setActiveTab] = useState('match');
 
   return (
@@ -31,7 +31,14 @@ export default function Admin() {
               <div className="text-2xl">🏏</div>
               <div>
                 <h1 className="text-white font-display font-bold text-lg leading-tight">Cricket Scoreboard</h1>
-                <span className="text-slate-400 text-xs">Admin Panel</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-xs">Admin Panel</span>
+                  {hostId && (
+                    <span className="text-slate-500 text-[10px] font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                      ID: {hostId}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -39,7 +46,7 @@ export default function Admin() {
                 connected ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
               }`}>
                 <Radio size={12} className={connected ? 'animate-pulse' : ''} />
-                {connected ? 'Live' : 'Offline'}
+                {connected ? 'P2P Host Active' : 'Connecting...'}
               </div>
             </div>
           </div>
@@ -65,8 +72,8 @@ export default function Admin() {
         {/* Content */}
         <main className="max-w-4xl mx-auto px-4 py-6">
           {activeTab === 'match' && <MatchControl matchData={matchData} emit={emit} />}
-          {activeTab === 'style' && <StyleControl styleData={styleData} emit={emit} />}
-          {activeTab === 'remote' && <RemoteAccess emit={emit} />}
+          {activeTab === 'style' && <StyleControl styleData={styleData} emit={emit} hostId={hostId} />}
+          {activeTab === 'remote' && <RemoteAccess emit={emit} hostId={hostId} />}
         </main>
       </div>
     </>

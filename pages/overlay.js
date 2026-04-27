@@ -147,7 +147,7 @@ const LayoutTSports = ({
 );
 
 export default function Overlay() {
-  const { matchData, styleData } = useSocket();
+  const { matchData, styleData, hostId } = useSocket();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -157,7 +157,27 @@ export default function Overlay() {
 
   useEffect(() => { if (matchData && styleData) setShow(true); }, [matchData, styleData]);
 
-  if (!show) return null;
+  if (!hostId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black/20 text-white font-display">
+        <div className="text-center glass p-8 rounded-2xl border border-white/5">
+          <h2 className="text-xl font-bold mb-2">Overlay Offline</h2>
+          <p className="text-slate-400 text-sm">Add <code className="text-emerald-400 px-1 bg-black/20 rounded">?host=ID</code> to your URL to connect.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!show) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black/10 text-white font-display">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-400 animate-pulse">Connecting to Host: {hostId}...</p>
+        </div>
+      </div>
+    );
+  }
 
   const team1 = matchData.team1_name || 'Team A';
   const team2 = matchData.team2_name || 'Team B';

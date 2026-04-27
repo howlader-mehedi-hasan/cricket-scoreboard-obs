@@ -1,95 +1,47 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Wifi, Copy, Trash2, Plus, RefreshCw, Smartphone } from 'lucide-react';
+import { Copy, Smartphone, Info, Globe, Shield } from 'lucide-react';
 
-export default function RemoteAccess({ emit }) {
-  const [lanIP, setLanIP] = useState('');
-  const [tokens, setTokens] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function RemoteAccess({ hostId }) {
+  const [baseUrl, setBaseUrl] = useState('');
 
   useEffect(() => {
-    fetchInfo();
+    setBaseUrl(window.location.origin);
   }, []);
 
-  async function fetchInfo() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/network-info');
-      const data = await res.json();
-      setLanIP(data.ip || 'localhost');
-      setTokens(data.tokens || []);
-    } catch (err) {
-      console.error('Failed to fetch network info:', err);
-    }
-    setLoading(false);
-  }
-
-  async function createToken(role) {
-    try {
-      const res = await fetch('/api/network-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', role }),
-      });
-      const data = await res.json();
-      setTokens(data.tokens || []);
-    } catch (err) {
-      console.error('Failed to create token:', err);
-    }
-  }
-
-  async function revokeToken(token) {
-    try {
-      const res = await fetch('/api/network-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'revoke', token }),
-      });
-      const data = await res.json();
-      setTokens(data.tokens || []);
-    } catch (err) {
-      console.error('Failed to revoke token:', err);
-    }
-  }
-
-  function getUrl(role, token) {
-    return `http://${lanIP}:3000/remote?role=${role}&token=${token}`;
+  function getRemoteUrl(role) {
+    return `${baseUrl}/remote?role=${role}&host=${hostId}`;
   }
 
   function copyToClipboard(text) {
     navigator.clipboard.writeText(text);
   }
 
-  const activeScorer = tokens.find(t => t.role === 'scorer' && t.active);
-  const activeManager = tokens.find(t => t.role === 'manager' && t.active);
-
-  if (loading) {
+  if (!hostId) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <RefreshCw className="animate-spin text-emerald-400" size={24} />
+      <div className="glass rounded-xl p-8 text-center">
+        <Info className="mx-auto text-slate-500 mb-3" size={32} />
+        <h4 className="text-white font-semibold">Initializing P2P...</h4>
+        <p className="text-slate-400 text-sm mt-2">Waiting for Host ID to be generated.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      {/* Network Info */}
-      <div className="glass rounded-xl p-5">
-        <h4 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-          <Wifi size={16} className="text-emerald-400" />
-          Network Info
-        </h4>
-        <div className="glass-light rounded-lg p-3">
-          <span className="text-slate-400 text-xs uppercase tracking-wider">LAN IP Address</span>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-white font-mono text-lg font-bold">{lanIP}</span>
-            <button onClick={() => copyToClipboard(lanIP)} className="text-slate-400 hover:text-white transition-colors">
-              <Copy size={14} />
-            </button>
+      {/* P2P Status */}
+      <div className="glass rounded-xl p-5 border-l-4 border-emerald-500">
+        <div className="flex items-start gap-4">
+          <div className="bg-emerald-500/10 p-2 rounded-lg">
+            <Globe size={20} className="text-emerald-400" />
           </div>
-          <p className="text-slate-500 text-xs mt-2">
-            Devices must be on the same WiFi/Hotspot network to connect.
-          </p>
+          <div>
+            <h4 className="text-white font-semibold text-sm">Vercel P2P Sync Active</h4>
+            <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+              Your application is running in database-less mode. Your Main PC acts as the server.
+              Remote devices will connect directly to this browser tab.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -106,27 +58,17 @@ export default function RemoteAccess({ emit }) {
               Scorer
             </span>
           </div>
-          {activeScorer ? (
-            <div className="space-y-3">
-              <div className="bg-white rounded-xl p-3 flex items-center justify-center">
-                <QRCodeSVG value={getUrl('scorer', activeScorer.token_string)} size={180} level="M" />
-              </div>
-              <div className="flex items-center gap-1">
-                <input type="text" readOnly value={getUrl('scorer', activeScorer.token_string)}
-                  className="input-field text-xs font-mono flex-1" />
-                <button onClick={() => copyToClipboard(getUrl('scorer', activeScorer.token_string))}
-                  className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
-              </div>
-              <button onClick={() => revokeToken(activeScorer.token_string)}
-                className="btn btn-danger w-full text-xs py-2">
-                <Trash2 size={14} /> Revoke Access
-              </button>
+          <div className="space-y-3">
+            <div className="bg-white rounded-xl p-3 flex items-center justify-center">
+              <QRCodeSVG value={getRemoteUrl('scorer')} size={180} level="M" />
             </div>
-          ) : (
-            <button onClick={() => createToken('scorer')} className="btn btn-primary w-full py-3">
-              <Plus size={16} /> Generate Scorer QR
-            </button>
-          )}
+            <div className="flex items-center gap-1">
+              <input type="text" readOnly value={getRemoteUrl('scorer')}
+                className="input-field text-xs font-mono flex-1" />
+              <button onClick={() => copyToClipboard(getRemoteUrl('scorer'))}
+                className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
+            </div>
+          </div>
         </div>
 
         {/* Manager QR */}
@@ -140,63 +82,28 @@ export default function RemoteAccess({ emit }) {
               Manager
             </span>
           </div>
-          {activeManager ? (
-            <div className="space-y-3">
-              <div className="bg-white rounded-xl p-3 flex items-center justify-center">
-                <QRCodeSVG value={getUrl('manager', activeManager.token_string)} size={180} level="M" />
-              </div>
-              <div className="flex items-center gap-1">
-                <input type="text" readOnly value={getUrl('manager', activeManager.token_string)}
-                  className="input-field text-xs font-mono flex-1" />
-                <button onClick={() => copyToClipboard(getUrl('manager', activeManager.token_string))}
-                  className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
-              </div>
-              <button onClick={() => revokeToken(activeManager.token_string)}
-                className="btn btn-danger w-full text-xs py-2">
-                <Trash2 size={14} /> Revoke Access
-              </button>
+          <div className="space-y-3">
+            <div className="bg-white rounded-xl p-3 flex items-center justify-center">
+              <QRCodeSVG value={getRemoteUrl('manager')} size={180} level="M" />
             </div>
-          ) : (
-            <button onClick={() => createToken('manager')} className="btn btn-primary w-full py-3">
-              <Plus size={16} /> Generate Manager QR
-            </button>
-          )}
+            <div className="flex items-center gap-1">
+              <input type="text" readOnly value={getRemoteUrl('manager')}
+                className="input-field text-xs font-mono flex-1" />
+              <button onClick={() => copyToClipboard(getRemoteUrl('manager'))}
+                className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* All Tokens */}
-      <div className="glass rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-white font-semibold text-sm">All Access Tokens</h4>
-          <button onClick={fetchInfo} className="btn btn-secondary text-xs px-2 py-1">
-            <RefreshCw size={14} />
-          </button>
+      {/* Security Info */}
+      <div className="glass-light rounded-xl p-4 flex items-start gap-3">
+        <Shield size={16} className="text-slate-400 mt-0.5" />
+        <div className="text-xs text-slate-500 leading-relaxed">
+          <strong className="text-slate-300">Privacy Note:</strong> This connection is Peer-to-Peer. 
+          Scoring data is sent directly from your phone to this browser tab. 
+          No data is stored on external servers or databases.
         </div>
-        {tokens.length === 0 ? (
-          <p className="text-slate-500 text-sm text-center py-4">No tokens created yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {tokens.map(t => (
-              <div key={t.id} className="glass-light rounded-lg px-3 py-2 flex items-center justify-between">
-                <div>
-                  <span className={`text-xs uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${
-                    t.role === 'scorer' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'
-                  }`}>{t.role}</span>
-                  <span className="text-slate-400 text-xs font-mono ml-2">{t.token_string}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] ${t.active ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {t.active ? 'Active' : 'Revoked'}
-                  </span>
-                  {t.active && (
-                    <button onClick={() => revokeToken(t.token_string)}
-                      className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
