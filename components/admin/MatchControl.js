@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus } from 'lucide-react';
+import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus, Undo2 } from 'lucide-react';
 
 export default function MatchControl({ matchData, emit }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -63,8 +63,7 @@ export default function MatchControl({ matchData, emit }) {
       ballLabel = runsToAdd === 0 ? '0' : String(runsToAdd);
     }
 
-    emit('match:updateBulk', { updates });
-    emit('match:addBall', { ball: ballLabel });
+    emit('match:recordBall', { updates, ball: ballLabel });
 
     // Swap striker on odd runs (1, 3)
     if (runsToAdd % 2 === 1 && !isExtra) {
@@ -99,8 +98,11 @@ export default function MatchControl({ matchData, emit }) {
 
     updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
 
-    emit('match:updateBulk', { updates });
-    emit('match:addBall', { ball: 'W' });
+    emit('match:recordBall', { updates, ball: 'W' });
+  }
+
+  function handleUndo() {
+    emit('match:undo');
   }
 
   function handleWide() {
@@ -264,6 +266,9 @@ export default function MatchControl({ matchData, emit }) {
             <ArrowLeftRight size={16} /> Swap Strikers
           </button>
         </div>
+        <button onClick={handleUndo} className="btn bg-white/5 text-slate-400 w-full mt-2 py-2 text-xs font-bold flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-all uppercase tracking-widest">
+          <Undo2 size={14} /> Undo Last Ball
+        </button>
       </div>
 
       {/* Match Controls */}

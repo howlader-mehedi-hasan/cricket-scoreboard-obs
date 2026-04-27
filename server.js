@@ -35,6 +35,7 @@ nextApp.prepare().then(() => {
     // ── Match Events ──
     socket.on('match:update', (data) => {
       try {
+        db.pushHistory();
         const { field, value } = data;
         db.updateMatchData(field, value);
         const updated = db.getMatchData();
@@ -47,6 +48,7 @@ nextApp.prepare().then(() => {
 
     socket.on('match:updateBulk', (data) => {
       try {
+        db.pushHistory();
         const { updates } = data; // Array of { field, value }
         updates.forEach(({ field, value }) => {
           db.updateMatchData(field, value);
@@ -61,6 +63,7 @@ nextApp.prepare().then(() => {
 
     socket.on('match:addBall', (data) => {
       try {
+        db.pushHistory();
         const { ball } = data; // e.g., '1', '4', '6', '0', 'W', 'Wd', 'Nb'
         const current = db.getMatchData();
         let recentBalls = [];
@@ -75,8 +78,49 @@ nextApp.prepare().then(() => {
       }
     });
 
+    socket.on('match:recordBall', (data) => {
+      try {
+        db.pushHistory();
+        const { updates, ball } = data;
+        
+        // Update stats
+        if (updates) {
+          updates.forEach(({ field, value }) => {
+            db.updateMatchData(field, value);
+          });
+        }
+        
+        // Update timeline
+        if (ball) {
+          const current = db.getMatchData();
+          let recentBalls = [];
+          try { recentBalls = JSON.parse(current.recent_balls || '[]'); } catch {}
+          recentBalls.push(ball);
+          if (recentBalls.length > 36) recentBalls = recentBalls.slice(-36);
+          db.updateMatchData('recent_balls', JSON.stringify(recentBalls));
+        }
+
+        const updated = db.getMatchData();
+        io.emit('match:state', updated);
+      } catch (err) {
+        console.error('[Socket] match:recordBall error:', err.message);
+      }
+    });
+
+    socket.on('match:undo', () => {
+      try {
+        const state = db.popHistory();
+        if (state) {
+          io.emit('match:state', db.getMatchData());
+        }
+      } catch (err) {
+        console.error('[Socket] match:undo error:', err.message);
+      }
+    });
+
     socket.on('match:reset', () => {
       try {
+        db.pushHistory();
         db.resetMatchData();
         const updated = db.getMatchData();
         io.emit('match:state', updated);
@@ -95,6 +139,41 @@ nextApp.prepare().then(() => {
       } catch (err) {
         console.error('[Socket] style:update error:', err.message);
         socket.emit('error', { message: err.message });
+      }
+    });
+
+    socket.on('profile:switch', (data) => {
+      try {
+        const { name } = data;
+        db.updateStyleSettings('active_profile', name);
+        const updated = db.getStyleSettings();
+        io.emit('style:state', updated);
+      } catch (err) {
+        console.error('[Socket] profile:switch error:', err.message);
+      }
+    });
+
+    socket.on('profile:create', (data) => {
+      try {
+        const { name, layout_type, settings } = data;
+        db.createProfile(name, layout_type, settings);
+        db.updateStyleSettings('active_profile', name);
+        const updated = db.getStyleSettings();
+        io.emit('style:state', updated);
+      } catch (err) {
+        console.error('[Socket] profile:create error:', err.message);
+      }
+    });
+
+    socket.on('profile:delete', (data) => {
+      try {
+        const { name } = data;
+        db.deleteProfile(name);
+        db.updateStyleSettings('active_profile', 'default style');
+        const updated = db.getStyleSettings();
+        io.emit('style:state', updated);
+      } catch (err) {
+        console.error('[Socket] profile:delete error:', err.message);
       }
     });
 

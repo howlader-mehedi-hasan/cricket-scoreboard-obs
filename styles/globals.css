@@ -47,29 +47,47 @@ body.overlay-body {
   display: inline-block;
 }
 
-/* ── Ball timeline badges ── */
+/* ── Broadcast Theme Utilities ── */
+.bg-broadcast-green {
+  background: linear-gradient(to bottom, #044a2b, #012213);
+}
+
+.bg-broadcast-red {
+  background: linear-gradient(to bottom, #750f1b, #3b050c);
+}
+
+.text-broadcast-yellow {
+  color: #facc15;
+}
+
+.bg-broadcast-yellow {
+  background: #facc15;
+  color: #000;
+}
+
+/* ── Ball timeline badges (Broadcast Square Style) ── */
 .ball-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
+  width: 20px;
+  height: 24px;
+  font-size: 13px;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
   flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
-.ball-dot { background: rgba(255,255,255,0.15); color: #94a3b8; }
-.ball-1 { background: rgba(255,255,255,0.2); color: #e2e8f0; }
-.ball-2 { background: rgba(59,130,246,0.3); color: #93c5fd; }
-.ball-3 { background: rgba(59,130,246,0.4); color: #93c5fd; }
-.ball-4 { background: rgba(16,185,129,0.4); color: #6ee7b7; }
-.ball-6 { background: rgba(245,158,11,0.4); color: #fcd34d; }
-.ball-wicket { background: rgba(239,68,68,0.4); color: #fca5a5; }
-.ball-wide { background: rgba(168,85,247,0.3); color: #c4b5fd; }
-.ball-noball { background: rgba(236,72,153,0.3); color: #f9a8d4; }
+/* Base styles for run/dot/empty */
+.ball-dot { background: linear-gradient(to bottom, #facc15, #b48505); color: transparent; position: relative; }
+.ball-dot::after { content: ''; position: absolute; width: 6px; height: 6px; background: #000; border-radius: 50%; }
+
+.ball-run { background: linear-gradient(to bottom, #facc15, #b48505); color: #000; }
+.ball-wicket { background: linear-gradient(to bottom, #dc2626, #7f1d1d); color: #fff; }
+.ball-extra { background: linear-gradient(to bottom, #facc15, #b48505); color: #000; }
+.ball-empty { background: linear-gradient(to bottom, #525252, #262626); color: transparent; border: 1px solid rgba(255,255,255,0.2); }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
