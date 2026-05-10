@@ -172,6 +172,7 @@ export default function StyleControl({ styleData, emit, hostId }) {
         </div>
         <div className="mt-8 space-y-5">
           <Slider label="Background Opacity" field="bg_opacity" min={0} max={1} step={0.05} />
+          <Slider label="Clock Font Size" field="clock_font_size" min={10} max={80} step={1} />
           <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
             <label className="text-slate-300 text-xs uppercase tracking-widest font-bold">Ball Timeline</label>
             <button onClick={() => upd('show_timeline', ls.show_timeline === '1' ? '0' : '1')}
@@ -179,6 +180,110 @@ export default function StyleControl({ styleData, emit, hostId }) {
               {ls.show_timeline === '1' ? <Eye size={14} /> : <EyeOff size={14} />}
               {ls.show_timeline === '1' ? 'VISIBLE' : 'HIDDEN'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Broadcast Message Customization */}
+      <div className="glass rounded-xl p-5 shadow-xl border-l-4 border-amber-500">
+        <h4 className="text-white font-semibold text-sm mb-6 flex items-center gap-2">
+          <Radio size={18} className="text-amber-400" /> 
+          Broadcast Message Style (Full Screen)
+        </h4>
+
+        <div className="space-y-8">
+          {/* Background Settings */}
+          <div className="space-y-4">
+            <h5 className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Background</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ColorPicker label="Overlay BG Color" field="msg_bg_color" />
+              <Slider label="BG Opacity" field="msg_bg_opacity" min={0} max={1} step={0.05} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-slate-400 text-xs uppercase tracking-wider font-medium block">Background Image</label>
+              <div className="flex gap-2">
+                <input type="text" value={ls.msg_bg_image || ''} onChange={e => upd('msg_bg_image', e.target.value)}
+                  placeholder="Paste URL or browse..." className="input-field text-xs font-mono flex-1 bg-white/5" />
+                <button 
+                  onClick={() => document.getElementById('bg-upload').click()}
+                  className="btn btn-secondary px-4 py-2 flex items-center gap-2 text-xs whitespace-nowrap"
+                >
+                  <Plus size={14} /> Browse
+                </button>
+                <input 
+                  id="bg-upload"
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                      try {
+                        const res = await fetch('/api/upload', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: reader.result, name: file.name })
+                        });
+                        const data = await res.json();
+                        if (data.url) upd('msg_bg_image', data.url);
+                      } catch (err) { console.error('Upload failed', err); }
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-white/5" />
+
+          {/* Typography Settings */}
+          <div className="space-y-4">
+            <h5 className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Main Message Typography</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ColorPicker label="Font Color" field="msg_font_color" />
+              <Slider label="Font Size" field="msg_font_size" min={10} max={200} step={1} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-slate-400 text-xs uppercase tracking-wider font-medium block mb-2">Font Style</label>
+                <select value={ls.msg_font_style || 'italic'} onChange={e => upd('msg_font_style', e.target.value)}
+                  className="input-field w-full text-sm bg-white/5">
+                  <option value="normal">Normal</option>
+                  <option value="italic">Italic</option>
+                  <option value="bold">Bold</option>
+                  <option value="black">Black (Extra Bold)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-slate-400 text-xs uppercase tracking-wider font-medium block mb-2">Text Shadow</label>
+                <input type="text" value={ls.msg_text_shadow || ''} onChange={e => upd('msg_text_shadow', e.target.value)}
+                  placeholder="0 5px 20px rgba(0,0,0,0.8)" className="input-field text-xs font-mono w-full bg-white/5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-white/5" />
+
+          {/* Additional Text Settings */}
+          <div className="space-y-4">
+            <h5 className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Additional Header/Footer</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Header Text (Before)</label>
+                <input type="text" value={ls.msg_before_text || ''} onChange={e => upd('msg_before_text', e.target.value)}
+                  className="input-field text-sm w-full bg-white/5" placeholder="e.g. BREAKING NEWS" />
+                <Slider label="Header Font Size" field="msg_before_font_size" min={10} max={100} step={1} />
+              </div>
+              <div className="space-y-3">
+                <label className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Footer Text (After)</label>
+                <input type="text" value={ls.msg_after_text || ''} onChange={e => upd('msg_after_text', e.target.value)}
+                  className="input-field text-sm w-full bg-white/5" placeholder="e.g. STAY TUNED" />
+                <Slider label="Footer Font Size" field="msg_after_font_size" min={10} max={100} step={1} />
+              </div>
+            </div>
           </div>
         </div>
       </div>

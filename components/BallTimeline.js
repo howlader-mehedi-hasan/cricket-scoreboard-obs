@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
 function getBallStyle(ball) {
-  const b = String(ball).toUpperCase();
+  const label = typeof ball === 'object' && ball !== null ? ball.label : ball;
+  const b = String(label).toUpperCase();
   if (b === 'EMPTY') return 'ball-empty';
   if (b === 'W') return 'ball-wicket';
   if (b === 'WD' || b === 'WIDE' || b === 'NB' || b === 'NOBALL') return 'ball-extra';
@@ -10,7 +11,8 @@ function getBallStyle(ball) {
 }
 
 function getBallLabel(ball) {
-  const b = String(ball).toUpperCase();
+  const label = typeof ball === 'object' && ball !== null ? ball.label : ball;
+  const b = String(label).toUpperCase();
   if (b === 'EMPTY') return '';
   if (b === '0' || b === '.') return '';
   if (b === 'W') return 'W';

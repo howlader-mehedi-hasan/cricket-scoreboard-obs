@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useSocket } from '@/lib/socket';
 import MatchControl from '@/components/admin/MatchControl';
 import StyleControl from '@/components/admin/StyleControl';
 import RemoteAccess from '@/components/admin/RemoteAccess';
-import { Gamepad2, Palette, Wifi, Radio } from 'lucide-react';
+import TeamSetup from '@/components/admin/TeamSetup';
+import MatchHistory from '@/components/admin/MatchHistory';
+import { Gamepad2, Palette, Wifi, Radio, Shield, History } from 'lucide-react';
 
 const tabs = [
+  { id: 'setup', label: 'Team Setup', icon: Shield },
   { id: 'match', label: 'Match Control', icon: Gamepad2 },
+  { id: 'history', label: 'Match History', icon: History },
   { id: 'style', label: 'Style & Position', icon: Palette },
   { id: 'remote', label: 'LAN Remote', icon: Wifi },
 ];
@@ -15,6 +19,20 @@ const tabs = [
 export default function Admin() {
   const { matchData, styleData, connected, emit, hostId } = useSocket();
   const [activeTab, setActiveTab] = useState('match');
+  const [teams, setTeams] = useState([]);
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const res = await fetch('/api/teams');
+        const data = await res.json();
+        setTeams(data);
+      } catch (err) {
+        console.error('Failed to fetch teams in admin:', err);
+      }
+    };
+    fetchTeams();
+  }, []);
 
   return (
     <>
@@ -71,7 +89,9 @@ export default function Admin() {
 
         {/* Content */}
         <main className="max-w-4xl mx-auto px-4 py-6">
-          {activeTab === 'match' && <MatchControl matchData={matchData} emit={emit} />}
+          {activeTab === 'setup' && <TeamSetup emit={emit} matchData={matchData} />}
+          {activeTab === 'match' && <MatchControl matchData={matchData} emit={emit} teams={teams} />}
+          {activeTab === 'history' && <MatchHistory />}
           {activeTab === 'style' && <StyleControl styleData={styleData} emit={emit} hostId={hostId} />}
           {activeTab === 'remote' && <RemoteAccess emit={emit} hostId={hostId} />}
         </main>

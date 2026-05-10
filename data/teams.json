@@ -1,0 +1,209 @@
+[
+  {
+    "id": "facfd808-e648-4368-b385-b0aa1104dcb8",
+    "fullName": "CSE-cheallengers",
+    "shortName": "CSE",
+    "department": "computer",
+    "players": [
+      {
+        "id": "ad622973-9965-4750-8986-c00cc3f73430",
+        "name": "Sakib",
+        "jersey": "10"
+      },
+      {
+        "id": "a80be67f-737d-49b6-9489-6e499d08b803",
+        "name": "Tamim",
+        "jersey": "12"
+      },
+      {
+        "id": "c7687c2b-b25c-4364-9670-1627f5483939",
+        "name": "Moshfeq",
+        "jersey": "15"
+      },
+      {
+        "id": "37da9650-bfec-4ab5-9653-98e8ab64c0ff",
+        "name": "Ridoy",
+        "jersey": "20"
+      },
+      {
+        "id": "10343d31-880e-400d-b3eb-087e00129afb",
+        "name": "Suni",
+        "jersey": "5"
+      },
+      {
+        "id": "8aba72be-669c-48ef-b19b-1af08a268575",
+        "name": "Rana",
+        "jersey": "11"
+      },
+      {
+        "id": "fdbfdc16-21bb-4470-92ee-1252ef474145",
+        "name": "Robi",
+        "jersey": "34"
+      },
+      {
+        "id": "00a2f3dd-758c-4f95-a1a4-1016954fea66",
+        "name": "Arif",
+        "jersey": "2"
+      },
+      {
+        "id": "1048ea73-6dfd-42a8-b9b3-6c10f816a572",
+        "name": "Rakib",
+        "jersey": "3"
+      },
+      {
+        "id": "935e3b38-14c0-4597-87f3-a3c19f971513",
+        "name": "Mostafiz",
+        "jersey": "1"
+      },
+      {
+        "id": "9f81c7e4-198c-4ff5-992f-f931b69eb055",
+        "name": "Ahad",
+        "jersey": "13"
+      }
+    ]
+  },
+  {
+    "id": "cd590f7a-d8d5-4aa9-8e3e-d77b1f7a5ba2",
+    "fullName": "Civil-Sparton",
+    "shortName": "CS",
+    "department": "Civil",
+    "players": [
+      {
+        "id": "1af6918f-b353-406d-8ce6-0d3ec2c406f6",
+        "name": "Rana",
+        "jersey": "10"
+      },
+      {
+        "id": "8470a166-198c-4152-9770-070aa2ac54b1",
+        "name": "Bishowjit",
+        "jersey": "11"
+      },
+      {
+        "id": "bf5bb062-ef7a-4220-8719-0362b829e2fe",
+        "name": "Rakibul",
+        "jersey": "12"
+      },
+      {
+        "id": "d8c27b1f-1123-4d26-b65a-9086858ddfc8",
+        "name": "Rabbi",
+        "jersey": "9"
+      },
+      {
+        "id": "952b03ab-6da9-4da2-aa91-56e06fbe8d98",
+        "name": "Sakib",
+        "jersey": "8"
+      },
+      {
+        "id": "164d6365-0def-4944-8159-449fd19c0726",
+        "name": "Abair",
+        "jersey": "13"
+      },
+      {
+        "id": "7e66c8da-0dab-495f-8060-229d43451112",
+        "name": "Atik",
+        "jersey": "14"
+      },
+      {
+        "id": "66aa7844-87cd-49b4-a637-bff8f12739e6",
+        "name": "Jisan",
+        "jersey": "15"
+      },
+      {
+        "id": "a3c05d95-72c0-4888-bd35-e051f075ebea",
+        "name": "Rubel",
+        "jersey": "16"
+      },
+      {
+        "id": "ca17ceaa-e096-42a4-becd-14a68a92fa6c",
+        "name": "Rofik",
+        "jersey": "16"
+      },
+      {
+        "id": "6bcfc242-c317-4c20-a4dd-6344819ad253",
+        "name": "Raihan",
+        "jersey": "17"
+      }
+    ]
+  },
+  {
+    "id": "bcea72a9-fa40-43a8-95dd-0fe3cdd6561d",
+    "fullName": "PowerE",
+    "shortName": "EEE",
+    "department": "Electrical",
+    "players": [
+      {
+        "id": "b73d7584-18dd-4ef2-aa42-f9ce8620a3d5",
+        "name": "A",
+        "jersey": "1"
+      },
+      {
+        "id": "70e15b8f-785a-4c37-a532-b149d47b0d4a",
+        "name": "B",
+        "jersey": "2"
+      },
+      {
+        "id": "8c841d7e-a129-4eb9-9465-fdc379bef5b9",
+        "name": "C",
+        "jersey": "3"
+      },
+      {
+        "id": "8ee0582a-f056-428a-ba46-3c777f0335bc",
+        "name": "D",
+        "jersey": "4"
+      },
+      {
+        "id": "a8aa0b74-9fd4-411b-bb4d-edbb0ed21edb",
+        "name": "E",
+        "jersey": "5"
+      },
+      {
+        "id": "639a1bb1-038d-41c2-8a8d-b6f82fc07971",
+        "name": "F",
+        "jersey": "6"
+      },
+      {
+        "id": "864e2a88-7bcc-416a-ab72-0dac9cbed98e",
+        "name": "G",
+        "jersey": "7"
+      },
+      {
+        "id": "62340d13-7f1f-4bfb-a099-d36b4c08c276",
+        "name": "H",
+        "jersey": "8"
+      },
+      {
+        "id": "2a814862-b2af-4374-9097-2443a3e32575",
+        "name": "i",
+        "jersey": "9"
+      },
+      {
+        "id": "e1ee5c0d-b13c-4889-8b29-93f39f501ab3",
+        "name": "j",
+        "jersey": "10"
+      },
+      {
+        "id": "e72bd046-0185-44de-9a05-02ade1758554",
+        "name": "k",
+        "jersey": "11"
+      }
+    ]
+  },
+  {
+    "id": "d5763603-9082-493f-8d36-716101748903",
+    "fullName": "English LL",
+    "shortName": "ELL",
+    "department": "English language and literature",
+    "players": [
+      {
+        "id": "790b8b54-75e9-49e0-a18c-854aa1f6df21",
+        "name": "Kashem ",
+        "jersey": "55"
+      },
+      {
+        "id": "d01dd039-23ae-47cc-83af-92e425f5f308",
+        "name": "Karim",
+        "jersey": "44"
+      }
+    ]
+  }
+]
