@@ -213,3 +213,22 @@ body.overlay-body {
 .score-btn:active {
   transform: scale(0.92);
 }
+
+.score-btn-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  user-select: none;
+  min-height: 48px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.score-btn-small:active {
+  transform: scale(0.94);
+}

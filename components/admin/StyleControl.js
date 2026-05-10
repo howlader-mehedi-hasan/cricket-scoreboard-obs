@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Move, Eye, EyeOff, Save, Trash2, Plus, Layout, Radio, Copy, Info } from 'lucide-react';
+import { Palette, Move, Eye, EyeOff, Save, Trash2, Plus, Layout, Radio, Copy, Info, Check } from 'lucide-react';
 
 export default function StyleControl({ styleData, emit, hostId }) {
   const [ls, setLs] = useState({
@@ -17,6 +17,33 @@ export default function StyleControl({ styleData, emit, hostId }) {
     : '';
 
   useEffect(() => { if (styleData) setLs(styleData); }, [styleData]);
+
+  const [copied, setCopied] = useState(false);
+
+  function copyToClipboard(text) {
+    const performCopy = () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+        } catch (err) {
+          console.error('Fallback copy failed', err);
+        }
+        document.body.removeChild(textArea);
+        return Promise.resolve();
+      }
+    };
+
+    performCopy().then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   function upd(f, v) { setLs(p => ({ ...p, [f]: v })); emit('style:update', { field: f, value: v }); }
   
@@ -84,10 +111,10 @@ export default function StyleControl({ styleData, emit, hostId }) {
             className="input-field text-xs font-mono flex-1 bg-black/20"
           />
           <button 
-            onClick={() => navigator.clipboard.writeText(overlayUrl)}
-            className="btn btn-secondary px-3 py-2 flex items-center gap-2 text-xs"
+            onClick={() => copyToClipboard(overlayUrl)}
+            className={`btn ${copied ? 'bg-emerald-500 text-white' : 'btn-secondary'} px-3 py-2 flex items-center gap-2 text-xs transition-all duration-300`}
           >
-            <Copy size={14} /> Copy Link
+            {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied!' : 'Copy Link'}
           </button>
         </div>
         <p className="text-slate-500 text-[10px] mt-2 italic flex items-center gap-1">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Smartphone, Info, Globe, Shield } from 'lucide-react';
+import { Copy, Smartphone, Info, Globe, Shield, Check } from 'lucide-react';
 
 export default function RemoteAccess({ hostId }) {
   const [baseUrl, setBaseUrl] = useState('');
@@ -13,8 +13,31 @@ export default function RemoteAccess({ hostId }) {
     return `${baseUrl}/remote?role=${role}&host=${hostId}`;
   }
 
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text);
+  const [copied, setCopied] = useState(null);
+
+  function copyToClipboard(text, id) {
+    const performCopy = () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+        } catch (err) {
+          console.error('Fallback copy failed', err);
+        }
+        document.body.removeChild(textArea);
+        return Promise.resolve();
+      }
+    };
+
+    performCopy().then(() => {
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    });
   }
 
   if (!hostId) {
@@ -65,8 +88,10 @@ export default function RemoteAccess({ hostId }) {
             <div className="flex items-center gap-1">
               <input type="text" readOnly value={getRemoteUrl('scorer')}
                 className="input-field text-xs font-mono flex-1" />
-              <button onClick={() => copyToClipboard(getRemoteUrl('scorer'))}
-                className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
+              <button onClick={() => copyToClipboard(getRemoteUrl('scorer'), 'scorer')}
+                className={`btn ${copied === 'scorer' ? 'bg-emerald-500 text-white' : 'btn-secondary'} px-2 py-2 transition-all duration-300`}>
+                {copied === 'scorer' ? <Check size={14} /> : <Copy size={14} />}
+              </button>
             </div>
           </div>
         </div>
@@ -89,8 +114,10 @@ export default function RemoteAccess({ hostId }) {
             <div className="flex items-center gap-1">
               <input type="text" readOnly value={getRemoteUrl('manager')}
                 className="input-field text-xs font-mono flex-1" />
-              <button onClick={() => copyToClipboard(getRemoteUrl('manager'))}
-                className="btn btn-secondary px-2 py-2"><Copy size={14} /></button>
+              <button onClick={() => copyToClipboard(getRemoteUrl('manager'), 'manager')}
+                className={`btn ${copied === 'manager' ? 'bg-emerald-500 text-white' : 'btn-secondary'} px-2 py-2 transition-all duration-300`}>
+                {copied === 'manager' ? <Check size={14} /> : <Copy size={14} />}
+              </button>
             </div>
           </div>
         </div>

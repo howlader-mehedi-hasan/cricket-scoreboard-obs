@@ -11,6 +11,20 @@ export default function Remote() {
   const router = useRouter();
   const { role, host } = router.query;
   const { matchData, connected, emit } = useSocket();
+  const [teams, setTeams] = useState([]);
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const res = await fetch('/api/teams');
+        const data = await res.json();
+        setTeams(data);
+      } catch (err) {
+        console.error('Failed to fetch teams in remote:', err);
+      }
+    };
+    fetchTeams();
+  }, []);
 
   if (!role || !host) {
     return (
@@ -64,9 +78,9 @@ export default function Remote() {
         <main className="p-4">
           {matchData ? (
             role === 'scorer' ? (
-              <ScorerPanel matchData={matchData} emit={emit} />
+              <ScorerPanel matchData={matchData} emit={emit} teams={teams} />
             ) : (
-              <ManagerPanel matchData={matchData} emit={emit} />
+              <ManagerPanel matchData={matchData} emit={emit} teams={teams} />
             )
           ) : (
             <div className="text-center py-12">
