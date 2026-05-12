@@ -155,10 +155,10 @@ const LayoutTSports = ({
           <span className="font-black text-[17px] tracking-tight">{totalBalls > 0 ? ((parseInt(runs) / totalBalls) * 6).toFixed(2) : '0.00'}</span>
         </div>
         {showTimeline && (
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold tracking-widest text-white/80">THIS OVER</span>
-            <BallTimeline balls={recentBalls} maxVisible={6} />
-          </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold tracking-widest text-white/80">THIS OVER</span>
+              <BallTimeline balls={recentBalls} maxVisible={12} />
+            </div>
         )}
       </div>
     </div>

@@ -19,7 +19,7 @@ export default function Home() {
           </div>
 
           <div className="space-y-3">
-            <Link href="/admin"
+            <Link href="/admin" target="_blank"
               className="glass rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 transition-all cursor-pointer block">
               <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center">
                 <Gamepad2 className="text-emerald-400" size={24} />
@@ -30,7 +30,7 @@ export default function Home() {
               </div>
             </Link>
 
-            <Link href="/overlay"
+            <Link href="/overlay" target="_blank"
               className="glass rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 transition-all cursor-pointer block">
               <div className="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center">
                 <Monitor className="text-blue-400" size={24} />
@@ -41,7 +41,7 @@ export default function Home() {
               </div>
             </Link>
 
-            <Link href="/remote?role=scorer&token=demo"
+            <Link href="/remote?role=scorer&token=demo" target="_blank"
               className="glass rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 transition-all cursor-pointer block">
               <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center">
                 <Smartphone className="text-purple-400" size={24} />

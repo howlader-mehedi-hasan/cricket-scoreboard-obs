@@ -1,0 +1,47 @@
+Implementation of Advanced Cricket Run Tracking & Overthrow Logic
+
+**Context:**
+I am building/updating a cricket scoring application and I need to implement a robust logic to handle different types of runs and extras. The system should categorize runs accurately and handle complex scenarios like overthrows.
+
+**Requirements:**
+
+### 1. Run Classification (Data Model)
+
+Create a structure or enum to handle the following run types:
+
+* **Off-the-bat:** 0 (Dot), 1, 2, 3, 4, 6. (Updates batsman and team score).
+* **Extras:**
+* **Wide:** +1 to team total, ball not counted, credited as 'Wide' in extras.
+* **No-Ball:** +1 to team total, ball not counted, batsman can still score runs (off-the-bat or leg-byes).
+* **Byes/Leg-Byes:** +N to team total, ball counted, not credited to the batsman's score.
+
+
+* **Penalty:** +5 runs (e.g., ball hitting the helmet on the ground).
+
+### 2. Overthrow Logic (The Core Task)
+
+Implement a logic to handle **Overthrows** which can occur during any of the above scenarios.
+
+* **Input Variables:** `initialRuns` (runs completed before the throw), `isBoundary` (boolean), `additionalRuns` (if they kept running after the throw).
+* **Rules to Apply:**
+1. If a fielder throws the ball and it misses the stumps/wicketkeeper, any runs the batsmen complete *after* the throw are added to the runs completed *before* the throw.
+2. If the overthrow goes to the **boundary**, the team gets: (Runs already completed at the moment of the throw) + 4.
+3. **Attribution:** If the ball came off the bat, all overthrow runs (including the boundary) go to the **batsman**. If it was a bye/leg-bye/wide, the runs go to the respective **extras** category.
+
+
+
+### 3. Edge Cases to Handle
+
+* **No Ball + Overthrow:** If it's a No-ball and the batsman hits it for 2, then an overthrow results in a boundary, the total should be 1 (No-ball) + 2 (Bat) + 4 (Overthrow) = 7 runs.
+* **Wicket on Overthrow:** If a batsman is run out attempting an extra run during an overthrow, the run they were attempting does not count, but previously completed runs do.
+
+
+i have already added run clasification model in my project,
+in match control page there are already 12 buttons to handle the  run in the score board
+
+now i need to implement the 2. Overthrow Logic (The Core Task)and 3. Edge Cases to Handle
+
+for that i need more buttons in the match control page. 
+
+according your thought how many more buttons i need to add? and what should be their names?
+add thouse necessary buttons in the match control page.
