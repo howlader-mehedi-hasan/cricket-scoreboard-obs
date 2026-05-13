@@ -17,15 +17,10 @@ const handle = nextApp.getRequestHandler();
 // Initialize JSON DB
 jsonDb.initDb();
 
-// In-Memory state for active match
-let matchData = {};
+// Initialize active match state from persistent storage
+let matchData = jsonDb.getLiveMatch();
 let matchHistory = [];
-let styleSettings = {
-  primary_color: '#10b981',
-  secondary_color: '#3b82f6',
-  bg_opacity: '0.75',
-  theme: 'dark'
-};
+let styleSettings = jsonDb.getStyleSettings();
 
 function pushHistory() {
   matchHistory.push(JSON.stringify(matchData));
@@ -46,28 +41,9 @@ nextApp.prepare().then(() => {
 
   app.set('io', io);
 
-  // ──── REST API for JSON DB ────
-  app.get('/api/teams', (req, res) => {
-    res.json(jsonDb.getTeams());
-  });
-
-  app.post('/api/teams', (req, res) => {
-    const team = jsonDb.createTeam(req.body);
-    res.json(team);
-  });
-
-  app.post('/api/teams/:id/players', (req, res) => {
-    const player = jsonDb.addPlayerToTeam(req.params.id, req.body);
-    if (player) res.json(player);
-    else res.status(404).json({ error: 'Team not found' });
-  });
-
-  app.delete('/api/teams/:id/players/:playerId', (req, res) => {
-    const success = jsonDb.deletePlayer(req.params.id, req.params.playerId);
-    if (success) res.json({ success: true });
-    else res.status(404).json({ error: 'Not found' });
-  });
-
+  // REST API routes for Teams and Uploads have been moved to Next.js API routes 
+  // in pages/api to support hot-reloading and avoid server restart issues.
+  
   app.get('/api/matches', (req, res) => {
     res.json(jsonDb.getMatches());
   });
@@ -76,30 +52,6 @@ nextApp.prepare().then(() => {
     // Save current active match to DB
     const saved = jsonDb.saveMatch(matchData);
     res.json(saved);
-  });
-
-  // API: File Upload
-  app.post('/api/upload', (req, res) => {
-    console.log('[Server] Received upload request:', req.body?.name);
-    try {
-      const { image, name } = req.body;
-      if (!image || !name) {
-        console.error('[Server] Missing image or name');
-        return res.status(400).json({ error: 'Missing data' });
-      }
-
-      const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-      const extension = name.split('.').pop();
-      const fileName = `bg_${Date.now()}.${extension}`;
-      const filePath = path.join(__dirname, 'public', 'uploads', fileName);
-
-      fs.writeFileSync(filePath, base64Data, 'base64');
-      console.log('[Server] File saved to:', filePath);
-      res.json({ url: `/uploads/${fileName}` });
-    } catch (err) {
-      console.error('[Server] Upload error:', err);
-      res.status(500).json({ error: 'Upload failed' });
-    }
   });
 
   // ──── Socket.io Event Handlers ────
@@ -116,6 +68,7 @@ nextApp.prepare().then(() => {
         pushHistory();
         const { field, value } = data;
         matchData[field] = value;
+        jsonDb.updateLiveMatch(matchData);
         io.emit('match:state', matchData);
       } catch (err) {
         console.error('[Socket] match:update error:', err.message);
@@ -129,6 +82,7 @@ nextApp.prepare().then(() => {
         updates.forEach(({ field, value }) => {
           matchData[field] = value;
         });
+        jsonDb.updateLiveMatch(matchData);
         io.emit('match:state', matchData);
       } catch (err) {
         console.error('[Socket] match:updateBulk error:', err.message);
@@ -150,6 +104,7 @@ nextApp.prepare().then(() => {
         if (recentBalls.length > 36) recentBalls = recentBalls.slice(-36);
         matchData.recent_balls = JSON.stringify(recentBalls);
         matchData.ball_log = JSON.stringify(fullLog);
+        jsonDb.updateLiveMatch(matchData);
         io.emit('match:state', matchData);
       } catch (err) {
         console.error('[Socket] match:addBall error:', err.message);
@@ -181,6 +136,7 @@ nextApp.prepare().then(() => {
           matchData.ball_log = JSON.stringify(fullLog);
         }
 
+        jsonDb.updateLiveMatch(matchData);
         io.emit('match:state', matchData);
       } catch (err) {
         console.error('[Socket] match:recordBall error:', err.message);
@@ -190,13 +146,25 @@ nextApp.prepare().then(() => {
     socket.on('match:end', (data) => {
       try {
         console.log('[Socket] Match ended. Saving to database...');
-        matchData.match_status = 'Match Ended';
+        matchData.match_status = data.result || 'Match Ended';
+        matchData.is_match_ended = 'true';
+        matchData.match_ended_at = Date.now().toString();
         matchData.performances = data.performances;
         
-        // Save to JSON Database
-        jsonDb.saveMatch(matchData);
+        // Save to History Database
+        const matchRecord = {
+          teams: matchData.batting_team === 'team1' ? [matchData.team1_name, matchData.team2_name] : [matchData.team2_name, matchData.team1_name],
+          result: data.result || 'Match Ended',
+          ballLog: JSON.parse(matchData.ball_log || '[]'),
+          playerPerformances: data.performances
+        };
+        jsonDb.saveMatch(matchRecord);
+        
+        // Persist final live state
+        jsonDb.updateLiveMatch(matchData);
         
         io.emit('match:state', matchData);
+        io.emit('match:ended', matchRecord);
       } catch (err) {
         console.error('[Socket] match:end error:', err.message);
       }
@@ -207,6 +175,7 @@ nextApp.prepare().then(() => {
         const stateStr = matchHistory.pop();
         if (stateStr) {
           matchData = JSON.parse(stateStr);
+          jsonDb.updateLiveMatch(matchData);
           io.emit('match:state', matchData);
         }
       } catch (err) {
@@ -217,23 +186,19 @@ nextApp.prepare().then(() => {
     socket.on('match:reset', () => {
       try {
         pushHistory();
-        matchData = {}; // Clear
+        matchData = {
+          team1_name: 'Team A', team2_name: 'Team B',
+          runs: '0', wickets: '0', overs: '0', balls: '0',
+          innings: '1', striker_name: 'Batsman 1', striker_runs: '0', striker_balls: '0',
+          non_striker_name: 'Batsman 2', non_striker_runs: '0', non_striker_balls: '0',
+          bowler_name: 'Bowler 1', bowler_overs: '0', bowler_runs: '0', bowler_wickets: '0',
+          recent_balls: '[]', ball_log: '[]', batting_team: 'team1', match_status: 'Yet to begin'
+        };
+        jsonDb.updateLiveMatch(matchData);
         io.emit('match:state', matchData);
       } catch (err) {
         console.error('[Socket] match:reset error:', err.message);
       }
-    });
-
-    socket.on('match:end', (summary) => {
-      // Save to JSON DB
-      const matchRecord = {
-        teams: matchData.batting_team === 'team1' ? [matchData.team1_name, matchData.team2_name] : [matchData.team2_name, matchData.team1_name],
-        result: summary.result || 'Match Ended',
-        ballLog: JSON.parse(matchData.ball_log || '[]'),
-        playerPerformances: summary.performances
-      };
-      jsonDb.saveMatch(matchRecord);
-      io.emit('match:ended', matchRecord);
     });
 
     // ── Style Events ──
@@ -241,6 +206,7 @@ nextApp.prepare().then(() => {
       try {
         const { field, value } = data;
         styleSettings[field] = value;
+        jsonDb.updateStyleSettings(styleSettings);
         io.emit('style:state', styleSettings);
       } catch (err) {
         console.error('[Socket] style:update error:', err.message);

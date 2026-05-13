@@ -12,10 +12,9 @@ function getBallStyle(ball) {
 
 function getBallLabel(ball) {
   const label = typeof ball === 'object' && ball !== null ? ball.label : ball;
-  const b = String(label).toUpperCase();
-  if (b === 'EMPTY') return '';
-  if (b === '0' || b === '.') return '';
-  return typeof ball === 'object' && ball !== null ? ball.label : ball;
+  const b = String(label || '').toUpperCase();
+  if (b === 'EMPTY' || b === '0' || b === '.' || b === '') return '';
+  return String(label);
 }
 
 export default function BallTimeline({ balls = [], maxVisible = 12 }) {

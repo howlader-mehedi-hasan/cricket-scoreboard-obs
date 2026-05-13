@@ -8,6 +8,10 @@ export default function StyleControl({ styleData, emit, hostId }) {
     bg_opacity: '0.75', show_timeline: '1',
     active_profile: 'default style',
     layout_type: 'default',
+    score_panel_bg: '#1a2744',
+    profile_x: '10', profile_y: '24',
+    msg_panel_width: '100', msg_panel_height: '100',
+    msg_panel_scale: '100', msg_panel_radius: '0',
     profiles: []
   });
   const [newProfileName, setNewProfileName] = useState('');
@@ -16,7 +20,10 @@ export default function StyleControl({ styleData, emit, hostId }) {
     ? `${window.location.origin}/overlay?host=${hostId}`
     : '';
 
-  useEffect(() => { if (styleData) setLs(styleData); }, [styleData]);
+  const [isDragging, setIsDragging] = useState(false);
+  useEffect(() => { 
+    if (styleData && !isDragging) setLs(styleData); 
+  }, [styleData, isDragging]);
 
   const [copied, setCopied] = useState(false);
 
@@ -66,7 +73,7 @@ export default function StyleControl({ styleData, emit, hostId }) {
       emit('profile:delete', { name });
     }
   }
-
+  
   const Slider = ({ label, field, min=0, max=100, step=1 }) => (
     <div>
       <div className="flex justify-between mb-1.5">
@@ -76,8 +83,12 @@ export default function StyleControl({ styleData, emit, hostId }) {
         </span>
       </div>
       <input type="range" min={min} max={max} step={step} value={ls[field] || 0}
+        onMouseDown={() => setIsDragging(true)}
+        onMouseUp={() => setIsDragging(false)}
+        onTouchStart={() => setIsDragging(true)}
+        onTouchEnd={() => setIsDragging(false)}
         onChange={e => upd(field, e.target.value)}
-        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+        className="w-full h-2 cursor-pointer"
         style={{ background: `linear-gradient(90deg, #10b981 ${field === 'bg_opacity' ? parseFloat(ls[field])*100 : ls[field]}%, rgba(255,255,255,0.1) ${field === 'bg_opacity' ? parseFloat(ls[field])*100 : ls[field]}%)` }}
       />
     </div>
@@ -167,8 +178,27 @@ export default function StyleControl({ styleData, emit, hostId }) {
             <Move size={16} className="text-emerald-400" /> Position
           </h4>
           <div className="space-y-4">
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Scoreboard</div>
             <Slider label="X Offset" field="x_offset" />
             <Slider label="Y Offset" field="y_offset" />
+            
+            <div className="pt-4 mt-4 border-t border-white/5">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Player Intro Card</div>
+              <Slider label="Profile X (Left)" field="profile_x" />
+              <Slider label="Profile Y (Bottom)" field="profile_y" />
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-white/5">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Big Screen Panel</div>
+              <Slider label="Scale (Zoom) %" field="msg_panel_scale" />
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Slider label="Width %" field="msg_panel_width" />
+                <Slider label="Height %" field="msg_panel_height" />
+              </div>
+              <div className="mt-2">
+                <Slider label="Corner Radius (px)" field="msg_panel_radius" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -176,7 +206,7 @@ export default function StyleControl({ styleData, emit, hostId }) {
           <h4 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
             <Layout size={16} className="text-blue-400" /> Layout Type
           </h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button onClick={() => upd('layout_type', 'default')}
               className={`px-3 py-3 rounded-lg text-[10px] uppercase tracking-widest font-black border transition-all ${ls.layout_type === 'default' ? 'bg-blue-500 text-white border-blue-400 shadow-lg' : 'bg-white/5 border-white/10 text-slate-500'}`}>
               Default (Rounded)
@@ -184,6 +214,14 @@ export default function StyleControl({ styleData, emit, hostId }) {
             <button onClick={() => upd('layout_type', 't-sports')}
               className={`px-3 py-3 rounded-lg text-[10px] uppercase tracking-widest font-black border transition-all ${ls.layout_type === 't-sports' ? 'bg-blue-500 text-white border-blue-400 shadow-lg' : 'bg-white/5 border-white/10 text-slate-500'}`}>
               T-Sports (Flat)
+            </button>
+            <button onClick={() => upd('layout_type', 'diamond')}
+              className={`px-3 py-3 rounded-lg text-[10px] uppercase tracking-widest font-black border transition-all ${ls.layout_type === 'diamond' ? 'bg-blue-500 text-white border-blue-400 shadow-lg' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+              Diamond (Slanted)
+            </button>
+            <button onClick={() => upd('layout_type', 'hmh-cs')}
+              className={`px-3 py-3 rounded-lg text-[10px] uppercase tracking-widest font-black border transition-all ${ls.layout_type === 'hmh-cs' ? 'bg-blue-500 text-white border-blue-400 shadow-lg' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+              HMH-CS (Pro)
             </button>
           </div>
         </div>
@@ -196,6 +234,9 @@ export default function StyleControl({ styleData, emit, hostId }) {
         <div className="grid grid-cols-2 gap-4">
           <ColorPicker label="Primary Color" field="primary_color" />
           <ColorPicker label="Secondary Color" field="secondary_color" />
+          <div className="col-span-2">
+             <ColorPicker label="Central Score Panel BG" field="score_panel_bg" />
+          </div>
         </div>
         <div className="mt-8 space-y-5">
           <Slider label="Background Opacity" field="bg_opacity" min={0} max={1} step={0.05} />

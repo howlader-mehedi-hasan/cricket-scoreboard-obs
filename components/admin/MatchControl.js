@@ -12,6 +12,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     isBoundary: false,        // overthrow went to boundary?
     additionalRuns: 0,        // runs completed after throw (if not boundary)
   });
+  const [showRunOutModal, setShowRunOutModal] = useState(false);
+  const [runOutConfig, setRunOutConfig] = useState({
+    playerOut: 'striker',
+    runsCompleted: 0,
+    deliveryType: 'normal'
+  });
 
   if (!matchData) return null;
 
@@ -75,11 +81,25 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           const val = e.target.value;
           const updates = [];
           if (isBowler) {
+            const history = JSON.parse(matchData.bowlers_history || '{}');
+            // 1. Save current bowler stats to history before switching
+            if (matchData.bowler_name) {
+              history[matchData.bowler_name] = {
+                runs: parseInt(matchData.bowler_runs || '0'),
+                wickets: parseInt(matchData.bowler_wickets || '0'),
+                overs: matchData.bowler_overs || '0.0'
+              };
+            }
+
+            // 2. Load new bowler stats if they exist in history
+            const newStats = history[val] || { runs: 0, wickets: 0, overs: '0.0' };
+            
             updates.push(
               { field: 'bowler_name', value: val },
-              { field: 'bowler_runs', value: 0 },
-              { field: 'bowler_wickets', value: 0 },
-              { field: 'bowler_overs', value: '0.0' }
+              { field: 'bowler_runs', value: newStats.runs },
+              { field: 'bowler_wickets', value: newStats.wickets },
+              { field: 'bowler_overs', value: newStats.overs },
+              { field: 'bowlers_history', value: JSON.stringify(history) }
             );
           } else {
             updates.push(
@@ -105,9 +125,21 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   );
 
   // Helper to add runs + update ball count + update striker stats
-  function addRuns(runsToAdd, isLegal = true, isExtra = false, customLabel = null) {
+  function addRuns(runsToAdd, isLegal = true, isExtra = false, customLabel = null, deliveryType = 'normal') {
     const updates = [];
     updates.push({ field: 'runs', value: runs + runsToAdd });
+
+    // FIX: Detect if we are starting a new over. 
+    // If balls === 0 and recent_balls has legal deliveries, it's from the previous over.
+    const rb = JSON.parse(matchData.recent_balls || '[]');
+    const hasLegalInRecent = rb.some(b => {
+      const lbl = String(typeof b === 'object' ? b.label : b || '').toLowerCase();
+      return lbl && !lbl.includes('wd') && !lbl.includes('nb') && lbl !== 'empty';
+    });
+
+    if (balls === 0 && hasLegalInRecent) {
+      updates.push({ field: 'recent_balls', value: '[]' });
+    }
 
     if (isLegal) {
       let newBalls = balls + 1;
@@ -117,10 +149,6 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         newBalls = 0;
       }
       
-      if (balls === 0 && isLegal) {
-        updates.push({ field: 'recent_balls', value: '[]' });
-      }
-
       updates.push({ field: 'balls', value: newBalls });
       updates.push({ field: 'overs', value: newOvers });
 
@@ -135,17 +163,63 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
     updates.push({ field: 'bowler_runs', value: bowlerRuns + runsToAdd });
 
-    if (!isExtra) {
-      updates.push({ field: 'striker_runs', value: strikerRuns + runsToAdd });
-      if (isLegal) {
-        updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
-      }
+    // Free Hit Logic
+    const currentFreeHit = matchData.free_hit === 'true';
+    if (deliveryType === 'noball') {
+      updates.push({ field: 'free_hit', value: 'true' });
+    } else if (isLegal && currentFreeHit) {
+      // Legal ball delivered, free hit is spent
+      updates.push({ field: 'free_hit', value: 'false' });
+    }
+    // (If it's a Wide during a Free Hit, it remains a Free Hit)
+
+    // Update history in real-time
+    const history = JSON.parse(matchData.bowlers_history || '{}');
+    if (matchData.bowler_name) {
+      const bOversFinal = isLegal ? updates.find(u => u.field === 'bowler_overs')?.value : bowlerOversVal;
+      history[matchData.bowler_name] = {
+        runs: bowlerRuns + runsToAdd,
+        wickets: bowlerWickets,
+        overs: bOversFinal || bowlerOversVal
+      };
+      updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
+    }
+
+    let newStrikerRuns = strikerRuns + (!isExtra ? runsToAdd : 0);
+    let newStrikerBalls = strikerBalls + (isLegal ? 1 : 0);
+    let newNonStrikerRuns = parseInt(matchData.non_striker_runs || '0');
+    let newNonStrikerBalls = parseInt(matchData.non_striker_balls || '0');
+    let newStrikerName = strikerName;
+    let newNonStrikerName = matchData.non_striker_name;
+
+    const isOverComplete = isLegal && (balls + 1 >= 6);
+    const isOddRun = (runsToAdd % 2 === 1) && !isExtra;
+
+    if ((isOddRun && !isOverComplete) || (!isOddRun && isOverComplete)) {
+      const currentOnTop = matchData.striker_on_top === 'false' ? false : true;
+      updates.push(
+        { field: 'striker_name', value: newNonStrikerName },
+        { field: 'striker_runs', value: newNonStrikerRuns },
+        { field: 'striker_balls', value: newNonStrikerBalls },
+        { field: 'non_striker_name', value: newStrikerName },
+        { field: 'non_striker_runs', value: newStrikerRuns },
+        { field: 'non_striker_balls', value: newStrikerBalls },
+        { field: 'striker_on_top', value: String(!currentOnTop) }
+      );
+    } else {
+      // No swap needed (even runs + no over end, OR odd run + over end)
+      updates.push(
+        { field: 'striker_runs', value: newStrikerRuns },
+        { field: 'striker_balls', value: newStrikerBalls }
+      );
     }
 
     let ballLabel = customLabel;
     if (!ballLabel) {
       if (isExtra) {
-        ballLabel = runsToAdd === 1 ? 'Wd' : 'Nb';
+        if (deliveryType === 'wide') ballLabel = 'Wd';
+        else if (deliveryType === 'noball') ballLabel = 'Nb';
+        else ballLabel = 'E'; // fallback
       } else {
         ballLabel = runsToAdd === 0 ? '0' : String(runsToAdd);
       }
@@ -157,15 +231,6 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
-
-    const isOverComplete = isLegal && (balls + 1 >= 6);
-    const isOddRun = (runsToAdd % 2 === 1) && !isExtra;
-
-    if (isOddRun && isOverComplete) {
-      console.log('[MatchControl] Odd run on last ball - Striker stays for next over');
-    } else if (isOddRun || isOverComplete) {
-      setTimeout(() => swapStrikers(), 50);
-    }
   }
 
   function handleWicket() {
@@ -188,9 +253,45 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     let newBBalls = bBalls + 1;
     let newBWhole = bWhole;
     if (newBBalls >= 6) { newBWhole += 1; newBBalls = 0; }
-    updates.push({ field: 'bowler_overs', value: `${newBWhole}.${newBBalls}` });
+    const newBOversVal = `${newBWhole}.${newBBalls}`;
+    updates.push({ field: 'bowler_overs', value: newBOversVal });
 
-    updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
+    // Update history in real-time for wicket
+    const history = JSON.parse(matchData.bowlers_history || '{}');
+    if (matchData.bowler_name) {
+      history[matchData.bowler_name] = {
+        runs: bowlerRuns,
+        wickets: bowlerWickets + 1,
+        overs: newBOversVal
+      };
+      updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
+    }
+
+    const isOverComplete = (balls + 1 >= 6);
+    
+    // Clear the current striker (they are out)
+    // If it's NOT the end of the over, the new batsman will be the striker.
+    // If it IS the end of the over, the non-striker will become the striker for the next over.
+    if (isOverComplete) {
+      // Over end swap: non-striker becomes the new striker
+      const currentOnTop = matchData.striker_on_top === 'false' ? false : true;
+      updates.push(
+        { field: 'striker_name', value: matchData.non_striker_name },
+        { field: 'striker_runs', value: parseInt(matchData.non_striker_runs || '0') },
+        { field: 'striker_balls', value: parseInt(matchData.non_striker_balls || '0') },
+        { field: 'non_striker_name', value: '' },
+        { field: 'non_striker_runs', value: 0 },
+        { field: 'non_striker_balls', value: 0 },
+        { field: 'striker_on_top', value: String(!currentOnTop) }
+      );
+    } else {
+      // Not over end: just clear striker, non-striker stays non-striker
+      updates.push(
+        { field: 'striker_name', value: '' },
+        { field: 'striker_runs', value: 0 },
+        { field: 'striker_balls', value: 0 }
+      );
+    }
 
     const ballObj = {
       label: 'W', run: 0, extra: false, wicket: true,
@@ -198,29 +299,19 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
-
-    // Clear striker so user selects a new one
-    emit('match:updateBulk', {
-      updates: [
-        { field: 'striker_name', value: '' },
-        { field: 'striker_runs', value: 0 },
-        { field: 'striker_balls', value: 0 }
-      ]
-    });
-
-    if (balls + 1 >= 6) setTimeout(() => swapStrikers(), 50);
   }
 
   function handleUndo() { emit('match:undo'); }
-  function handleWide() { addRuns(1, false, true); }
-  function handleNoBall() { addRuns(1, false, true); }
-  function handleWide4() { addRuns(5, false, true, 'Wd4'); }
+  function handleWide() { addRuns(1, false, true, null, 'wide'); }
+  function handleNoBall() { addRuns(1, false, true, null, 'noball'); }
+  function handleWide4() { addRuns(5, false, true, 'Wd4', 'wide'); }
   function handleNoBall4() {
     const updates = [
       { field: 'runs', value: runs + 5 },
       { field: 'bowler_runs', value: bowlerRuns + 5 },
       { field: 'striker_runs', value: strikerRuns + 4 },
-      { field: 'striker_balls', value: strikerBalls + 1 }
+      { field: 'striker_balls', value: strikerBalls + 1 },
+      { field: 'free_hit', value: 'true' }
     ];
     const ballObj = {
       label: 'NB4', run: 5, extra: true, wicket: false,
@@ -228,13 +319,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     };
     emit('match:recordBall', { updates, ball: ballObj });
   }
-  function handleLegBye5() { addRuns(5, true, true, 'LB5'); }
+  function handleLegBye4() { addRuns(4, true, true, 'LB4', 'legbye'); }
   function handleNoBall6() { 
     const updates = [
       { field: 'runs', value: runs + 7 },
       { field: 'bowler_runs', value: bowlerRuns + 7 },
       { field: 'striker_runs', value: strikerRuns + 6 },
-      { field: 'striker_balls', value: strikerBalls + 1 }
+      { field: 'striker_balls', value: strikerBalls + 1 },
+      { field: 'free_hit', value: 'true' }
     ];
     const ballObj = {
       label: 'NB6', run: 7, extra: true, wicket: false,
@@ -288,26 +380,57 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     }
 
     // Bowler is charged all runs from the delivery
-    updates.push({ field: 'bowler_runs', value: bowlerRuns + totalTeamRuns });
+    const newBowlerRuns = bowlerRuns + totalTeamRuns;
+    updates.push({ field: 'bowler_runs', value: newBowlerRuns });
+
+    // Update history in real-time
+    if (matchData.bowler_name) {
+      const history = JSON.parse(matchData.bowlers_history || '{}');
+      const bOversFinal = isLegal ? updates.find(u => u.field === 'bowler_overs')?.value : bowlerOversVal;
+      history[matchData.bowler_name] = {
+        runs: newBowlerRuns,
+        wickets: bowlerWickets,
+        overs: bOversFinal || bowlerOversVal
+      };
+      updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
+    }
 
     // Attribution: Who gets credited the runs?
+    let newStrikerRuns = strikerRuns;
+    let newStrikerBalls = strikerBalls;
+    let newNonStrikerRuns = parseInt(matchData.non_striker_runs || '0');
+    let newNonStrikerBalls = parseInt(matchData.non_striker_balls || '0');
+    let newStrikerName = strikerName;
+    let newNonStrikerName = matchData.non_striker_name;
+
     if (deliveryType === 'normal' || deliveryType === 'noball') {
-      // Off-the-bat: ALL overthrow runs go to the batsman
-      // For No-ball: batsman gets the bat runs + overthrow, penalty goes to extras
-      const batsmanRuns = totalRunsFromDelivery;
-      updates.push({ field: 'striker_runs', value: strikerRuns + batsmanRuns });
-      if (isLegal) {
-        updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
-      } else {
-        // No-ball: count as a ball faced
-        updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
-      }
+      newStrikerRuns += totalRunsFromDelivery;
+      newStrikerBalls += 1;
+    } else if (isLegal) {
+      newStrikerBalls += 1;
+    }
+
+    // Handle striker swap logic
+    const isOverComplete = isLegal && (balls + 1 >= 6);
+    const totalBatsmanRuns = (deliveryType === 'normal' || deliveryType === 'noball') ? totalRunsFromDelivery : 0;
+    const isOddRun = (totalBatsmanRuns % 2 === 1);
+
+    if ((isOddRun && !isOverComplete) || (!isOddRun && isOverComplete)) {
+      const currentOnTop = matchData.striker_on_top === 'false' ? false : true;
+      updates.push(
+        { field: 'striker_name', value: newNonStrikerName },
+        { field: 'striker_runs', value: newNonStrikerRuns },
+        { field: 'striker_balls', value: newNonStrikerBalls },
+        { field: 'non_striker_name', value: newStrikerName },
+        { field: 'non_striker_runs', value: newStrikerRuns },
+        { field: 'non_striker_balls', value: newStrikerBalls },
+        { field: 'striker_on_top', value: String(!currentOnTop) }
+      );
     } else {
-      // Bye, Leg-bye, Wide: runs go to extras, NOT batsman
-      if (isLegal) {
-        updates.push({ field: 'striker_balls', value: strikerBalls + 1 });
-      }
-      // No batsman run credit — all goes to extras category
+      updates.push(
+        { field: 'striker_runs', value: newStrikerRuns },
+        { field: 'striker_balls', value: newStrikerBalls }
+      );
     }
 
     // Build ball label
@@ -331,17 +454,6 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
-
-    // Handle striker swap logic
-    const isOverComplete = isLegal && (balls + 1 >= 6);
-    const totalBatsmanRuns = (deliveryType === 'normal' || deliveryType === 'noball') ? totalRunsFromDelivery : 0;
-    const isOddRun = (totalBatsmanRuns % 2 === 1);
-
-    if (isOddRun && isOverComplete) {
-      // Odd run on last ball — striker stays
-    } else if (isOddRun || isOverComplete) {
-      setTimeout(() => swapStrikers(), 50);
-    }
   }
 
   // Quick overthrow buttons (most common scenarios)
@@ -353,6 +465,108 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   function handleLegByeOT() { handleOverthrow(0, 1, 'legbye', false); } // Leg-bye + 1 OT run
   function handleWideOT() { handleOverthrow(0, 1, 'wide', false); }    // Wide + 1 OT run
   function handleNoBallOT() { handleOverthrow(0, 1, 'noball', false); } // No-ball + 1 OT run
+
+  function handleRunOutSubmit() {
+    const { playerOut, runsCompleted, deliveryType } = runOutConfig;
+    const isLegal = deliveryType !== 'wide' && deliveryType !== 'noball';
+    const extraPenalty = (deliveryType === 'wide' || deliveryType === 'noball') ? 1 : 0;
+    const totalTeamRuns = runsCompleted + extraPenalty;
+
+    const updates = [
+      { field: 'wickets', value: wickets + 1 },
+      { field: 'runs', value: runs + totalTeamRuns }
+    ];
+
+    let currentBowlerOvers = bowlerOversVal;
+
+    if (isLegal) {
+      let newBalls = balls + 1;
+      let newOvers = overs;
+      if (newBalls >= 6) { newOvers += 1; newBalls = 0; }
+      if (balls === 0) updates.push({ field: 'recent_balls', value: '[]' });
+      updates.push({ field: 'balls', value: newBalls });
+      updates.push({ field: 'overs', value: newOvers });
+
+      const bOvers = parseFloat(bowlerOversVal);
+      const bWhole = Math.floor(bOvers);
+      const bBalls = Math.round((bOvers - bWhole) * 10);
+      let newBBalls = bBalls + 1;
+      let newBWhole = bWhole;
+      if (newBBalls >= 6) { newBWhole += 1; newBBalls = 0; }
+      currentBowlerOvers = `${newBWhole}.${newBBalls}`;
+      updates.push({ field: 'bowler_overs', value: currentBowlerOvers });
+    }
+
+    // Update bowler runs (always) and history
+    const newBowlerRuns = bowlerRuns + totalTeamRuns;
+    updates.push({ field: 'bowler_runs', value: newBowlerRuns });
+    
+    if (matchData.bowler_name) {
+      const history = JSON.parse(matchData.bowlers_history || '{}');
+      history[matchData.bowler_name] = {
+        runs: newBowlerRuns,
+        wickets: bowlerWickets,
+        overs: currentBowlerOvers
+      };
+      updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
+    }
+
+    // Handle Batsman Stats
+    let sRuns = strikerRuns;
+    let sBalls = strikerBalls + (isLegal || deliveryType === 'noball' ? 1 : 0);
+    let nsRuns = parseInt(matchData.non_striker_runs || '0');
+    let nsBalls = parseInt(matchData.non_striker_balls || '0');
+    let sName = strikerName;
+    let nsName = matchData.non_striker_name;
+
+    if (deliveryType === 'normal' || deliveryType === 'noball') {
+      sRuns += runsCompleted;
+    }
+    
+    const outName = playerOut === 'striker' ? sName : nsName;
+    const isOdd = (runsCompleted % 2 === 1);
+    const isOverComplete = isLegal && (balls + 1 >= 6);
+
+    let finalSName, finalSRuns, finalSBalls, finalNSName, finalNSRuns, finalNSBalls;
+    let currentOnTop = matchData.striker_on_top === 'false' ? false : true;
+    let finalOnTop = currentOnTop;
+
+    if ((isOdd && !isOverComplete) || (!isOdd && isOverComplete)) {
+       finalSName = nsName; finalSRuns = nsRuns; finalSBalls = nsBalls;
+       finalNSName = sName; finalNSRuns = sRuns; finalNSBalls = sBalls;
+       finalOnTop = !currentOnTop;
+    } else {
+       finalSName = sName; finalSRuns = sRuns; finalSBalls = sBalls;
+       finalNSName = nsName; finalNSRuns = nsRuns; finalNSBalls = nsBalls;
+    }
+
+    if (finalSName === outName) {
+      finalSName = ''; finalSRuns = 0; finalSBalls = 0;
+    } else {
+      finalNSName = ''; finalNSRuns = 0; finalNSBalls = 0;
+    }
+
+    updates.push(
+      { field: 'striker_name', value: finalSName },
+      { field: 'striker_runs', value: finalSRuns },
+      { field: 'striker_balls', value: finalSBalls },
+      { field: 'non_striker_name', value: finalNSName },
+      { field: 'non_striker_runs', value: finalNSRuns },
+      { field: 'non_striker_balls', value: finalNSBalls },
+      { field: 'striker_on_top', value: String(finalOnTop) }
+    );
+
+    const prefixMap = { normal: '', wide: 'Wd', noball: 'NB', bye: 'B', legbye: 'LB' };
+    const ballObj = {
+      label: `${prefixMap[deliveryType]}${runsCompleted}+RO`,
+      run: totalTeamRuns, extra: !isLegal, wicket: true,
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+    };
+
+    emit('match:recordBall', { updates, ball: ballObj });
+    setShowRunOutModal(false);
+    setRunOutConfig({ playerOut: 'striker', runsCompleted: 0, deliveryType: 'normal' });
+  }
 
   function handlePenalty() {
     const updates = [
@@ -376,6 +590,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   }
 
   function swapStrikers() {
+    const currentOnTop = matchData.striker_on_top === 'false' ? false : true;
     const updates = [
       { field: 'striker_name', value: matchData.non_striker_name },
       { field: 'striker_runs', value: matchData.non_striker_runs },
@@ -383,6 +598,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       { field: 'non_striker_name', value: matchData.striker_name },
       { field: 'non_striker_runs', value: matchData.striker_runs },
       { field: 'non_striker_balls', value: matchData.striker_balls },
+      { field: 'striker_on_top', value: String(!currentOnTop) }
     ];
     emit('match:updateBulk', { updates });
   }
@@ -400,15 +616,26 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   }
 
   function handleNewOver() {
-    emit('match:updateBulk', {
-      updates: [
-        { field: 'bowler_name', value: '' },
-        { field: 'bowler_overs', value: '0.0' },
-        { field: 'bowler_runs', value: 0 },
-        { field: 'bowler_wickets', value: 0 },
-        { field: 'recent_balls', value: '[]' }
-      ]
-    });
+    const updates = [
+      { field: 'bowler_name', value: '' },
+      { field: 'bowler_overs', value: '0.0' },
+      { field: 'bowler_runs', value: 0 },
+      { field: 'bowler_wickets', value: 0 },
+      { field: 'recent_balls', value: '[]' }
+    ];
+
+    // Persist current bowler to history before clearing
+    if (matchData.bowler_name) {
+      const history = JSON.parse(matchData.bowlers_history || '{}');
+      history[matchData.bowler_name] = {
+        runs: parseInt(matchData.bowler_runs || '0'),
+        wickets: parseInt(matchData.bowler_wickets || '0'),
+        overs: matchData.bowler_overs || '0.0'
+      };
+      updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
+    }
+
+    emit('match:updateBulk', { updates });
   }
 
   function handleEndInnings() {
@@ -609,6 +836,24 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               Match Control
             </h3>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-white/5">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mr-1">PowerPlay</span>
+                <div className="flex gap-1">
+                  {['P1', 'P2', 'P3'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => emit('match:update', { field: 'powerplay', value: p })}
+                      className={`px-2 py-0.5 rounded text-[11px] font-black transition-all ${
+                        (matchData.powerplay || 'P1') === p 
+                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                          : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-lg border border-white/5">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Overs</span>
                 <input 
@@ -644,7 +889,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           <button onClick={handleNoBall} className="btn bg-pink-500/20 text-pink-300 py-3 text-sm font-bold hover:bg-pink-500/30">No Ball</button>
           <button onClick={handleWide4} className="btn bg-purple-500/30 text-purple-200 py-3 text-xs font-bold hover:bg-purple-500/40">Wd 4</button>
           <button onClick={handleNoBall4} className="btn bg-pink-500/30 text-pink-200 py-3 text-xs font-bold hover:bg-pink-500/40">NB 4</button>
-          <button onClick={handleLegBye5} className="btn bg-orange-500/20 text-orange-300 py-3 text-xs font-bold hover:bg-orange-500/30">LB 5</button>
+          <button onClick={handleLegBye4} className="btn bg-orange-500/20 text-orange-300 py-3 text-xs font-bold hover:bg-orange-500/30">LB 4</button>
           <button onClick={handleNoBall6} className="btn bg-rose-500/20 text-rose-300 py-3 text-xs font-bold hover:bg-rose-500/30">NB 6</button>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-2">
@@ -699,12 +944,38 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={handlePenalty} className="btn bg-red-500/15 text-red-300 py-2.5 text-sm font-bold hover:bg-red-500/25 border border-red-500/10 transition-all flex items-center justify-center gap-1.5">
-            <AlertTriangle size={14} /> Penalty +5
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={handlePenalty} className="btn bg-red-500/15 text-red-300 py-2.5 text-[11px] font-bold hover:bg-red-500/25 border border-red-500/10 transition-all flex items-center justify-center gap-1">
+            <AlertTriangle size={12} /> Penalty +5
           </button>
-          <button onClick={() => setShowOTModal(true)} className="btn bg-gradient-to-r from-cyan-500/20 to-violet-500/20 text-white py-2.5 text-sm font-bold hover:from-cyan-500/30 hover:to-violet-500/30 border border-white/10 transition-all flex items-center justify-center gap-1.5">
-            <Settings size={14} /> Custom OT
+          <button onClick={() => setShowOTModal(true)} className="btn bg-cyan-500/15 text-cyan-300 py-2.5 text-[11px] font-bold hover:bg-cyan-500/25 border border-cyan-500/10 transition-all flex items-center justify-center gap-1">
+            <Settings size={12} /> Custom OT
+          </button>
+          <button onClick={() => setShowRunOutModal(true)} className="btn bg-pink-500/15 text-pink-300 py-2.5 text-[11px] font-bold hover:bg-pink-500/25 border border-pink-500/10 transition-all flex items-center justify-center gap-1">
+            <AlertTriangle size={12} /> Run Out
+          </button>
+        </div>
+
+        {/* Free Hit Toggle */}
+        <div className="mt-3 flex items-center justify-between bg-amber-500/5 border border-amber-500/20 rounded-lg p-2.5">
+          <div className="flex items-center gap-2">
+            <Zap size={16} className={matchData.free_hit === 'true' ? "text-amber-400 animate-pulse" : "text-slate-600"} />
+            <div>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Status</span>
+              <span className={`text-xs font-black uppercase ${matchData.free_hit === 'true' ? "text-amber-400" : "text-slate-500"}`}>
+                {matchData.free_hit === 'true' ? "Free Hit Active" : "Normal Delivery"}
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={() => emit('match:update', { field: 'free_hit', value: matchData.free_hit === 'true' ? 'false' : 'true' })}
+            className={`px-4 py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+              matchData.free_hit === 'true' 
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30" 
+                : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
+            }`}
+          >
+            {matchData.free_hit === 'true' ? "Cancel Free Hit" : "Trigger Free Hit"}
           </button>
         </div>
 
@@ -886,19 +1157,177 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         </div>
       )}
 
+      {/* Run Out Modal */}
+      {showRunOutModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowRunOutModal(false)}>
+          <div className="bg-sec w-full max-w-md rounded-2xl p-6 border border-main shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6 border-b border-main pb-4">
+              <h3 className="text-xl font-display font-black text-main flex items-center gap-2">
+                <AlertTriangle className="text-pink-500" />
+                Run Out Configuration
+              </h3>
+              <button onClick={() => setShowRunOutModal(false)} className="text-slate-500 hover:text-main transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Delivery Type */}
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Delivery Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['normal', 'wide', 'noball'].map(type => (
+                    <button key={type} onClick={() => setRunOutConfig(c => ({ ...c, deliveryType: type }))}
+                      className={`py-2 rounded-lg text-xs font-bold capitalize border transition-all ${
+                        runOutConfig.deliveryType === type ? 'bg-pink-500/20 text-pink-500 border-pink-500' : 'bg-white/5 text-slate-400 border-white/5'
+                      }`}>
+                      {type === 'normal' ? 'Legal Ball' : type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Player Out */}
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Who is Run Out?</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setRunOutConfig(c => ({ ...c, playerOut: 'striker' }))}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      runOutConfig.playerOut === 'striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
+                    }`}>
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Striker</span>
+                    <span className={`text-sm font-bold truncate block ${runOutConfig.playerOut === 'striker' ? 'text-pink-500' : 'text-main'}`}>
+                      {strikerName || 'Batsman 1'}
+                    </span>
+                  </button>
+                  <button onClick={() => setRunOutConfig(c => ({ ...c, playerOut: 'non-striker' }))}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      runOutConfig.playerOut === 'non-striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
+                    }`}>
+                    <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Non-Striker</span>
+                    <span className={`text-sm font-bold truncate block ${runOutConfig.playerOut === 'non-striker' ? 'text-pink-500' : 'text-main'}`}>
+                      {matchData.non_striker_name || 'Batsman 2'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Runs Completed */}
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-3">Runs completed before out</label>
+                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                  <button onClick={() => setRunOutConfig(c => ({ ...c, runsCompleted: Math.max(0, c.runsCompleted - 1) }))}
+                    className="w-10 h-10 rounded-lg bg-white/5 text-main flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                    <Minus size={16} />
+                  </button>
+                  <span className="text-main text-2xl font-display font-black w-12 text-center">{runOutConfig.runsCompleted}</span>
+                  <button onClick={() => setRunOutConfig(c => ({ ...c, runsCompleted: c.runsCompleted + 1 }))}
+                    className="w-10 h-10 rounded-lg bg-white/5 text-main flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                    <Plus size={16} />
+                  </button>
+                  <div className="flex gap-1.5 ml-auto">
+                    {[0, 1, 2, 3].map(n => (
+                      <button key={n} onClick={() => setRunOutConfig(c => ({ ...c, runsCompleted: n }))}
+                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${
+                          runOutConfig.runsCompleted === n ? 'bg-pink-500/30 text-pink-500 border border-pink-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                        }`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3 mt-8">
+              <button onClick={() => setShowRunOutModal(false)}
+                className="btn bg-white/5 text-slate-400 py-3 text-sm font-bold border border-white/5 hover:bg-white/10 transition-all">
+                Cancel
+              </button>
+              <button onClick={handleRunOutSubmit}
+                className="btn bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 text-sm font-bold hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg shadow-pink-500/20">
+                Confirm Run Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Match Controls */}
-      <div className="glass rounded-xl p-5">
-        <h4 className="text-white font-semibold text-sm mb-3">Match Controls</h4>
+      <div className="glass rounded-xl p-5 border border-main">
+        <h4 className="text-main font-semibold text-sm mb-3">Match Controls</h4>
         <div className="grid grid-cols-2 gap-2">
           <button onClick={handleNewOver} className="btn btn-secondary py-2.5 text-sm">New Over</button>
           {innings === 1 ? (
-            <button onClick={handleEndInnings} className="btn bg-amber-500/20 text-amber-300 py-2.5 text-sm hover:bg-amber-500/30">End Innings</button>
+            <button onClick={handleEndInnings} className="btn bg-amber-500/20 text-amber-600 py-2.5 text-sm hover:bg-amber-500/30">End Innings</button>
           ) : (
-            <button onClick={handleEndMatch} className="btn bg-blue-500/20 text-blue-300 py-2.5 text-sm hover:bg-blue-500/30">End Match</button>
+            <button onClick={handleEndMatch} className="btn bg-blue-500/20 text-blue-600 py-2.5 text-sm hover:bg-blue-500/30">End Match</button>
           )}
         </div>
         <div className="mt-3">
           <EditableField label="Match Status" field="match_status" wide />
+        </div>
+      </div>
+
+      {/* Live Bowler Stats */}
+      <div className="glass rounded-xl p-5 border border-main">
+        <h4 className="text-main font-semibold text-sm mb-4 flex items-center gap-2">
+          <Wind size={16} className="text-violet-400" />
+          Live Bowler Stats (Innings {innings})
+        </h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-main">
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider">Bowler</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">O</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">R</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">W</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">Econ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-main">
+              {(() => {
+                const history = JSON.parse(matchData.bowlers_history || '{}');
+                const bowlerEntries = Object.entries(history);
+                
+                if (bowlerEntries.length === 0 && !matchData.bowler_name) {
+                  return <tr><td colSpan="5" className="py-4 text-center text-slate-500 italic">No bowling data yet.</td></tr>;
+                }
+
+                // Combine history with current active bowler if not in history yet
+                const allBowlers = { ...history };
+                if (matchData.bowler_name) {
+                  allBowlers[matchData.bowler_name] = {
+                    runs: parseInt(matchData.bowler_runs || '0'),
+                    wickets: parseInt(matchData.bowler_wickets || '0'),
+                    overs: matchData.bowler_overs || '0.0'
+                  };
+                }
+
+                return Object.entries(allBowlers).map(([name, stats]) => {
+                  const [o, b] = stats.overs.split('.').map(n => parseInt(n) || 0);
+                  const totalOversDec = o + (b / 6);
+                  const econ = totalOversDec > 0 ? (stats.runs / totalOversDec).toFixed(2) : '0.00';
+                  const isActive = name === matchData.bowler_name;
+
+                  return (
+                    <tr key={name} className={`${isActive ? 'bg-violet-500/5' : ''}`}>
+                      <td className="py-2.5 font-bold text-main flex items-center gap-2">
+                        {name}
+                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />}
+                      </td>
+                      <td className="py-2.5 text-center font-mono text-main">{stats.overs}</td>
+                      <td className="py-2.5 text-center font-mono text-main">{stats.runs}</td>
+                      <td className="py-2.5 text-center font-mono font-bold text-emerald-500">{stats.wickets}</td>
+                      <td className="py-2.5 text-center font-mono text-slate-500">{econ}</td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -940,25 +1369,25 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Runs</label>
               <input type="number" value={matchData.runs || 0} 
                 onChange={(e) => emit('match:update', { field: 'runs', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none focus:border-amber-500/50" />
+                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Wickets</label>
               <input type="number" value={matchData.wickets || 0} 
                 onChange={(e) => emit('match:update', { field: 'wickets', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none focus:border-amber-500/50" />
+                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Overs</label>
               <input type="number" value={matchData.overs || 0} 
                 onChange={(e) => emit('match:update', { field: 'overs', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none focus:border-amber-500/50" />
+                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Balls</label>
               <input type="number" value={matchData.balls || 0} 
                 onChange={(e) => emit('match:update', { field: 'balls', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none focus:border-amber-500/50" 
+                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" 
                 min="0" max="5" />
             </div>
           </div>
@@ -976,13 +1405,13 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <label className="text-[10px] text-slate-500">Runs</label>
                   <input type="number" value={matchData.striker_runs || 0} 
                     onChange={(e) => emit('match:update', { field: 'striker_runs', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-500">Balls</label>
                   <input type="number" value={matchData.striker_balls || 0} 
                     onChange={(e) => emit('match:update', { field: 'striker_balls', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
                 </div>
               </div>
             </div>
@@ -996,19 +1425,19 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <label className="text-[10px] text-slate-500">Runs</label>
                   <input type="number" value={matchData.bowler_runs || 0} 
                     onChange={(e) => emit('match:update', { field: 'bowler_runs', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-500">Wickets</label>
                   <input type="number" value={matchData.bowler_wickets || 0} 
                     onChange={(e) => emit('match:update', { field: 'bowler_wickets', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-500">Overs (ex: 2.3)</label>
                   <input type="text" value={matchData.bowler_overs || '0'} 
                     onChange={(e) => emit('match:update', { field: 'bowler_overs', value: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
                 </div>
               </div>
             </div>

@@ -60,7 +60,8 @@
         "name": "Ahad",
         "jersey": "13"
       }
-    ]
+    ],
+    "logo": "/uploads/bg_1778619526768.jpg"
   },
   {
     "id": "cd590f7a-d8d5-4aa9-8e3e-d77b1f7a5ba2",
@@ -123,7 +124,8 @@
         "name": "Raihan",
         "jersey": "17"
       }
-    ]
+    ],
+    "logo": "/uploads/bg_1778619236747.jpg"
   },
   {
     "id": "bcea72a9-fa40-43a8-95dd-0fe3cdd6561d",
@@ -186,7 +188,8 @@
         "name": "k",
         "jersey": "11"
       }
-    ]
+    ],
+    "logo": "/uploads/bg_1778619254483.jpg"
   },
   {
     "id": "d5763603-9082-493f-8d36-716101748903",
@@ -204,6 +207,45 @@
         "name": "Karim",
         "jersey": "44"
       }
-    ]
+    ],
+    "logo": "/uploads/bg_1778619272597.jpg"
+  },
+  {
+    "id": "0f8099f1-d4bd-4d22-b7a4-fa488fc83f3f",
+    "fullName": "Logistric",
+    "shortName": "LAW",
+    "department": "law",
+    "players": [
+      {
+        "id": "b77444fe-c3b1-4041-ab78-da781e1b3686",
+        "name": "Ab",
+        "jersey": "01"
+      },
+      {
+        "id": "ec8901e8-7611-4bfb-8fdf-4bde1e6ae7c7",
+        "name": "Cd",
+        "jersey": "02"
+      }
+    ],
+    "logo": "/uploads/bg_1778619314292.jpg"
+  },
+  {
+    "id": "45c1e1d3-45b5-4501-bc01-d69f6f6e367e",
+    "fullName": "BA Hunters",
+    "shortName": "BAH",
+    "department": "BBA",
+    "players": [
+      {
+        "id": "e5d6e004-9206-4304-8676-5fc7200371ac",
+        "name": "b1",
+        "jersey": "01"
+      },
+      {
+        "id": "393784de-b0dc-4d04-a2ce-d3a4f09d6786",
+        "name": "b2",
+        "jersey": "02"
+      }
+    ],
+    "logo": "/uploads/bg_1778619516353.png"
   }
 ]

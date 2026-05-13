@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Users, Radio, Shield } from 'lucide-react';
 import { useSocket } from '@/lib/socket';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import BallTimeline from '@/components/BallTimeline';
@@ -165,10 +166,399 @@ const LayoutTSports = ({
   </div>
 );
 
+const LayoutDiamond = ({
+  teamName, runs, wickets, bowlingTeam, oversDisplay, totalBalls, target, innings, matchStatus, matchName,
+  strikerName, strikerRuns, strikerBalls, nonStrikerName, bowlerName, bowlerFigs, bowlerOvers,
+  primaryColor, secondaryColor, bgOpacity, showTimeline, recentBalls, matchData
+}) => {
+  const rr = totalBalls > 0 ? ((parseInt(runs) / totalBalls) * 6).toFixed(2) : '0.00';
+  
+  return (
+    <div className="flex items-center h-16 w-full font-display select-none shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      {/* Left Logo */}
+      <div className="bg-white h-full px-5 flex items-center justify-center shrink-0 z-20" 
+           style={{ clipPath: 'polygon(0 0, 85% 0, 100% 100%, 0 100%)' }}>
+        <img src={matchData.team1_logo || "/logo-placeholder.svg"} className="h-10 w-10 object-contain" alt="L" />
+      </div>
+
+      {/* Batsman Section */}
+      <div className="flex bg-white h-full flex-grow -ml-4 pl-10 pr-12 relative z-10"
+           style={{ clipPath: 'polygon(5% 0, 100% 0, 95% 100%, 0% 100%)' }}>
+        {/* Purple Accent Arrow */}
+        <div className="absolute left-0 top-0 bottom-0 w-10 bg-[#2B1A64]" 
+             style={{ clipPath: 'polygon(0 0, 100% 50%, 0 100%)' }} />
+        
+        <div className="flex flex-col justify-center w-full text-black">
+          <div className="flex items-center justify-between gap-4">
+            <span className="uppercase font-black text-[15px] italic tracking-tight truncate max-w-[140px]">{strikerName}</span>
+            <div className="flex items-baseline gap-1.5 min-w-[50px] justify-end">
+              <span className="text-[18px] font-black">{strikerRuns}</span>
+              <span className="text-[11px] opacity-60 font-bold font-mono">{strikerBalls}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-4 opacity-75">
+            <span className="uppercase font-bold text-[14px] italic tracking-tight truncate max-w-[140px]">{nonStrikerName}</span>
+            <div className="flex items-baseline gap-1.5 min-w-[50px] justify-end">
+              <span className="text-[17px] font-black">{matchData.non_striker_runs || 0}</span>
+              <span className="text-[11px] opacity-60 font-bold font-mono">{matchData.non_striker_balls || 0}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Score Section */}
+      <div className="bg-[#2B1A64] h-full flex flex-col items-center justify-center px-12 -ml-6 relative z-30"
+           style={{ clipPath: 'polygon(8% 0, 92% 0, 100% 100%, 0% 100%)' }}>
+        <div className="text-[10px] text-white/80 font-black uppercase tracking-[0.2em] -mt-1 italic">
+          {matchName || `${matchData.team1_name} V ${matchData.team2_name}`}
+        </div>
+        <div className="flex items-center gap-3 my-0.5">
+          <div className="bg-[#D81B60] px-5 py-1 flex items-center justify-center shadow-lg"
+               style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0 100%)' }}>
+            <div className="text-3xl font-black text-white italic tracking-tighter leading-none flex items-center">
+              <AnimatedNumber value={runs} size="text-3xl" className="text-white" />
+              <span className="mx-0.5">-</span>
+              <AnimatedNumber value={wickets} size="text-2xl" className="text-white/90" />
+            </div>
+          </div>
+          <div className="bg-[#FDD835] text-black px-2.5 py-0.5 text-[13px] font-black italic flex items-center justify-center shadow-md"
+               style={{ clipPath: 'polygon(0 0, 85% 0, 100% 100%, 15% 100%)' }}>
+            P2
+          </div>
+          <div className="text-white text-[12px] font-black uppercase italic ml-1 whitespace-nowrap">
+             <AnimatedNumber value={oversDisplay} size="text-sm" className="text-white" /> OVERS
+          </div>
+        </div>
+        <div className="text-[11px] text-white font-black uppercase tracking-widest leading-none">
+          RUN RATE {rr}
+        </div>
+      </div>
+
+      {/* Bowler Section */}
+      <div className="bg-white h-full flex-grow -ml-6 pl-12 pr-10 flex items-center justify-between relative z-10"
+           style={{ clipPath: 'polygon(5% 0, 95% 0, 100% 100%, 0% 100%)' }}>
+        <div className="flex flex-col justify-center">
+          <div className="flex items-baseline gap-3 mb-1">
+            <span className="text-black font-black uppercase text-[15px] italic tracking-tight truncate max-w-[160px]">
+              {bowlerName}
+            </span>
+            <span className="text-black font-black text-[16px] italic">
+              {bowlerFigs} <span className="text-[11px] opacity-60 not-italic font-bold font-mono ml-0.5">({bowlerOvers})</span>
+            </span>
+          </div>
+          <div className="flex gap-1.5">
+            {recentBalls.slice(-6).map((ball, idx) => {
+               const rawLabel = typeof ball === 'object' && ball !== null ? ball.label : ball;
+               const label = String(rawLabel || '');
+               const isWicket = label.toLowerCase().includes('w') && !label.toLowerCase().includes('wd');
+               return (
+                <div key={idx} 
+                     className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${isWicket ? 'bg-red-600' : 'bg-[#2B1A64]'} text-white`}>
+                  {label === '.' ? '•' : label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Right Arrow */}
+        <div className="absolute right-0 top-0 bottom-0 w-10 bg-[#2B1A64]" 
+             style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 50%)' }} />
+      </div>
+
+      {/* Right Logo */}
+      <div className="bg-white h-full px-5 flex items-center justify-center shrink-0 -ml-4 z-20" 
+           style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)' }}>
+        <img src={matchData.team2_logo || "/logo-placeholder.svg"} className="h-10 w-10 object-contain" alt="R" />
+      </div>
+    </div>
+  );
+};
+
+const LayoutHMHCS = ({
+  teamName, runs, wickets, bowlingTeam, oversDisplay, totalBalls, target, innings, matchStatus, matchName,
+  strikerName, strikerRuns, strikerBalls, nonStrikerName, bowlerName, bowlerFigs, bowlerOvers,
+  primaryColor, secondaryColor, bgOpacity, showTimeline, recentBalls, matchData, styleData
+}) => {
+  const rr = totalBalls > 0 ? ((parseInt(runs) / totalBalls) * 6).toFixed(2) : '0.00';
+  const battingTeamKey = matchData.batting_team || 'team1';
+  const battingLogo = battingTeamKey === 'team1' ? matchData.team1_logo : matchData.team2_logo;
+  const bowlingLogo = battingTeamKey === 'team1' ? matchData.team2_logo : matchData.team1_logo;
+  const currentPowerplay = matchData.powerplay || 'P2';
+
+  // Fill empty slots for the over (6 legal balls)
+  const isIllegal = (ball) => {
+    const lbl = String(typeof ball === 'object' && ball !== null ? ball.label : ball || '').toUpperCase();
+    return lbl.includes('WD') || lbl.includes('NB');
+  };
+  const legalCount = recentBalls.filter(b => !isIllegal(b)).length;
+  const remaining = Math.max(0, 6 - legalCount);
+  const displayBalls = [...recentBalls];
+  for (let i = 0; i < remaining; i++) displayBalls.push('EMPTY');
+
+  const bowlerWickets = matchData.bowler_wickets || '0';
+  const bowlerRuns = matchData.bowler_runs || '0';
+
+  return (
+    <div className="flex items-center w-full select-none" style={{ height: '54px', fontFamily: "'Inter', 'Outfit', sans-serif" }}>
+      
+      {/* ── Batting Team Logo (far left, overlapping bar) ── */}
+      <div className="shrink-0 z-30 -mr-2 relative" style={{ width: '104px', height: '104px', marginTop: '-25px' }}>
+        <div style={{
+          width: '104px', height: '104px', borderRadius: '50%',
+          background: '#fff', border: `4px solid ${primaryColor}`,
+          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden'
+        }}>
+          <img src={battingLogo || "/logo-placeholder.svg"} style={{ width: '85px', height: '85px', objectFit: 'contain' }} alt="" />
+        </div>
+      </div>
+
+      {/* ── Main Scoreboard Bar ── */}
+      <div style={{
+        flexGrow: 1, height: '100%', display: 'flex', alignItems: 'center',
+        background: 'linear-gradient(180deg, #eaeaea 0%, #ffffff 12%, #ffffff 88%, #eaeaea 100%)',
+        borderTop: `2.5px solid ${primaryColor}`,
+        borderBottom: `2.5px solid ${primaryColor}`,
+        boxShadow: '0 3px 15px rgba(0,0,0,0.25)',
+        position: 'relative', overflow: 'visible'
+      }}>
+        
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0, paddingLeft: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingRight: '12px', shrink: 0, borderRight: '1px solid rgba(0,0,0,0.1)', marginRight: '10px' }}>
+            <div style={{
+              width: '40px', height: '40px',
+              background: '#fff',
+              border: `2px solid ${primaryColor}`,
+              borderRadius: '8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              overflow: 'hidden'
+            }}>
+              <img src="/bat-icon.png" style={{ width: '32px', height: '32px', objectFit: 'contain', transform: 'rotate(45deg)' }} alt="Bat" />
+            </div>
+            <span style={{ color: '#222', fontWeight: 900, fontSize: '20px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>{teamName}</span>
+          </div>
+
+          {(() => {
+            const onTop = matchData.striker_on_top === 'false' ? false : true;
+            const b1 = onTop 
+              ? { name: strikerName, runs: strikerRuns, balls: strikerBalls, onStrike: true }
+              : { name: nonStrikerName, runs: matchData.non_striker_runs || 0, balls: matchData.non_striker_balls || 0, onStrike: false };
+            const b2 = onTop
+              ? { name: nonStrikerName, runs: matchData.non_striker_runs || 0, balls: matchData.non_striker_balls || 0, onStrike: false }
+              : { name: strikerName, runs: strikerRuns, balls: strikerBalls, onStrike: true };
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: '12px', lineHeight: '1.15', shrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: b1.onStrike ? '#22c55e' : '#94a3b8', fontWeight: 800, fontSize: '13px', textTransform: 'uppercase' }}>
+                    {b1.name || '—'}
+                  </span>
+                  <span style={{ color: b1.onStrike ? '#22c55e' : '#94a3b8', fontWeight: 900, fontSize: '13px' }}>{b1.runs}</span>
+                  <span style={{ color: b1.onStrike ? '#22c55e' : '#94a3b8', opacity: 0.7, fontSize: '10px', fontFamily: 'monospace', fontWeight: 700 }}>({b1.balls})</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: b2.onStrike ? '#22c55e' : '#94a3b8', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase' }}>
+                    {b2.name || '—'}
+                  </span>
+                  <span style={{ color: b2.onStrike ? '#22c55e' : '#94a3b8', fontWeight: 900, fontSize: '12px' }}>{b2.runs}</span>
+                  <span style={{ color: b2.onStrike ? '#22c55e' : '#94a3b8', opacity: 0.7, fontSize: '10px', fontFamily: 'monospace', fontWeight: 700 }}>({b2.balls})</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingRight: '10px', lineHeight: '1.1', shrink: 0 }}>
+            <span style={{ color: '#555', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>CRR</span>
+            <span style={{ color: '#222', fontWeight: 900, fontSize: '13px' }}>{rr}</span>
+          </div>
+        </div>
+
+        {/* CENTER COLUMN: PowerPlay, Score Panel & Overs */}
+        <div style={{ flex: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {/* Powerplay & Free Hit Badges */}
+          <div style={{ shrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Free Hit */}
+            {matchData.free_hit === 'true' && (
+              <div style={{
+                background: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)',
+                color: '#000', fontSize: '12px', fontWeight: 900,
+                padding: '4px 12px', borderRadius: '4px',
+                letterSpacing: '0.5px', textTransform: 'uppercase',
+                boxShadow: '0 2px 10px rgba(245,158,11,0.5)',
+                border: '1px solid rgba(255,255,255,0.4)',
+                animation: 'pulse 1.5s infinite',
+                textAlign: 'center',
+                whiteSpace: 'nowrap'
+              }}>
+                Free Hit
+              </div>
+            )}
+
+            {/* Powerplay */}
+            <div style={{
+              background: secondaryColor,
+              color: '#fff', fontSize: '11px', fontWeight: 900,
+              padding: '4px 12px', borderRadius: '4px',
+              letterSpacing: '0.5px', textTransform: 'uppercase',
+              boxShadow: `0 2px 6px ${secondaryColor}44`,
+              border: '1px solid rgba(255,255,255,0.1)',
+              textAlign: 'center',
+              whiteSpace: 'nowrap'
+            }}>
+              {currentPowerplay}
+            </div>
+            
+            <style>{`
+              @keyframes pulse {
+                0% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.8; transform: scale(1.05); }
+                100% { opacity: 1; transform: scale(1); }
+              }
+            `}</style>
+          </div>
+
+          {/* Dark Score Panel (Overlapping Bar) */}
+          <div style={{
+            background: styleData.score_panel_bg || 'linear-gradient(180deg, #2a3f5f 0%, #1a2744 30%, #0f1d32 100%)',
+            borderRadius: '12px',
+            padding: '2px 24px',
+            height: '70px',
+            marginTop: '-8px', 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 6px 25px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.15)',
+            border: '2px solid rgba(255,255,255,0.15)',
+            minWidth: '170px',
+            shrink: 0,
+            zIndex: 40
+          }}>
+            {/* Runs - Wickets */}
+            <div style={{ display: 'flex', alignItems: 'center', lineHeight: 1, marginTop: '-1px' }}>
+              <span style={{ color: '#fff', fontWeight: 900, fontSize: '34px', letterSpacing: '-2px', fontFamily: "'Outfit', sans-serif" }}>
+                {runs}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 900, fontSize: '28px', margin: '0 3px' }}>-</span>
+              <span style={{ color: '#fff', fontWeight: 900, fontSize: '28px', letterSpacing: '-1px', fontFamily: "'Outfit', sans-serif" }}>
+                {wickets}
+              </span>
+            </div>
+            {/* Batting Team VS Bowling Team */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1, marginTop: '-2px', marginBottom: '1px' }}>
+              <span style={{ color: '#4ade80' }}>{teamName}</span>
+              <span style={{ color: '#fbbf24', fontWeight: 900 }}>VS</span>
+              <span style={{ color: '#c084fc' }}>{bowlingTeam}</span>
+            </div>
+          </div>
+
+          {/* Overs Box */}
+          <div style={{ shrink: 0 }}>
+            <div style={{
+              background: '#f8fafc',
+              border: `2px solid ${primaryColor}`,
+              borderRadius: '6px',
+              padding: '4px 12px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.05)'
+            }}>
+              <span style={{ color: '#1e293b', fontWeight: 900, fontSize: '18px', fontFamily: "'Outfit', sans-serif" }}>
+                {oversDisplay}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: 0, paddingRight: '10px' }}>
+          {/* Ball-by-ball Timeline (Dynamic Over Length) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '0 10px', shrink: 0 }}>
+            {displayBalls.map((ball, idx) => {
+              const rawLabel = typeof ball === 'object' && ball !== null ? ball.label : ball;
+              const label = String(rawLabel || '');
+              const upper = label.toUpperCase();
+              const isEmpty = upper === 'EMPTY';
+              const isWicket = upper.includes('W') && !upper.includes('WD');
+              const isDot = label === '0' || label === '.';
+
+              let bg = '#F59E0B';
+              let fg = '#000';
+              if (isEmpty) { bg = '#d4d4d4'; fg = 'transparent'; }
+              else if (isWicket) { bg = '#dc2626'; fg = '#fff'; }
+              else if (isDot) { bg = '#F59E0B'; fg = 'transparent'; }
+
+              return (
+                <div key={idx} style={{
+                  width: '18px', height: '18px', borderRadius: '2px',
+                  background: bg, color: fg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', fontWeight: 900,
+                  border: isEmpty ? '1px solid #bbb' : '1px solid rgba(0,0,0,0.15)'
+                }}>
+                  {isDot && !isEmpty ? (
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#000' }} />
+                  ) : (isEmpty ? '' : label)}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bowler Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', shrink: 0, borderLeft: '1px solid rgba(0,0,0,0.1)', borderRight: '1px solid rgba(0,0,0,0.1)', margin: '0 10px' }}>
+            <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: '12px' }}>{bowlerName}</span>
+            <span style={{ color: '#222', fontWeight: 900, fontSize: '13px' }}>{bowlerOvers}</span>
+            <div style={{ width: '1px', height: '16px', background: '#ccc' }} />
+            <span style={{ color: '#222', fontWeight: 900, fontSize: '13px' }}>{bowlerRuns}-{bowlerWickets}</span>
+          </div>
+
+          <div style={{ paddingLeft: '8px', paddingRight: '4px', shrink: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: '#222', fontWeight: 900, fontSize: '20px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>{bowlingTeam}</span>
+            {/* Ball Logo with Rounded Square Container */}
+            <div style={{
+              width: '40px', height: '40px',
+              background: '#fff',
+              border: `2px solid ${primaryColor}`,
+              borderRadius: '8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              overflow: 'hidden'
+            }}>
+              <img src="/ball-icon.png" style={{ width: '32px', height: '32px', objectFit: 'contain' }} alt="Ball" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bowling Team Logo (far right, overlapping bar) ── */}
+      <div className="shrink-0 z-30 -ml-2 relative" style={{ width: '104px', height: '104px', marginTop: '-25px' }}>
+        <div style={{
+          width: '104px', height: '104px', borderRadius: '50%',
+          background: '#fff', border: `4px solid ${primaryColor}`,
+          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden'
+        }}>
+          <img src={bowlingLogo || "/logo-placeholder.svg"} style={{ width: '85px', height: '85px', objectFit: 'contain' }} alt="" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
 export default function Overlay() {
   const { matchData, styleData, hostId } = useSocket();
+  const [teams, setTeams] = useState([]);
   const [show, setShow] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [profileQueue, setProfileQueue] = useState([]);
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/teams')
+      .then(res => res.json())
+      .then(data => setTeams(data))
+      .catch(err => console.error('Error fetching teams:', err));
+  }, []);
 
   useEffect(() => {
     document.body.classList.add('overlay-body');
@@ -180,14 +570,227 @@ export default function Overlay() {
     return () => clearInterval(timer);
   }, []);
 
+  const [showFreeHitBanner, setShowFreeHitBanner] = useState(false);
+  const [prevFreeHit, setPrevFreeHit] = useState(null);
+  const [activeEvent, setActiveEvent] = useState(null); // 'four' | 'six' | 'wicket'
+  const prevRecentBallsRef = useRef([]);
+  const prevInningsRef = useRef(null);
+  const prevStrikerRef = useRef('');
+  const prevNonStrikerRef = useRef('');
+  const prevBowlerRef = useRef('');
+  
+  const [profileToShow, setProfileToShow] = useState(null); // { type: 'striker' | 'non-striker' | 'bowler', data: playerObj }
+
+  useEffect(() => {
+    const isFH = matchData?.free_hit === 'true';
+    if (prevFreeHit !== null && isFH && !prevFreeHit) {
+      const delayTimer = setTimeout(() => setShowFreeHitBanner(true), 7000);
+      const hideTimer = setTimeout(() => setShowFreeHitBanner(false), 12000);
+      return () => {
+        clearTimeout(delayTimer);
+        clearTimeout(hideTimer);
+        setShowFreeHitBanner(false);
+      };
+    }
+    setPrevFreeHit(isFH);
+  }, [matchData?.free_hit, prevFreeHit]);
+
+  // Batsman Profile Auto-Trigger
+  useEffect(() => {
+    if (!matchData || !teams.length) return;
+
+    const innings = parseInt(matchData.innings || '1');
+    const striker = matchData.striker_name;
+    const nonStriker = matchData.non_striker_name;
+    const bowler = matchData.bowler_name;
+
+    // Helper to get player data (Batsmen)
+    const getPlayerData = (name) => {
+      if (!name) return null;
+      console.log('[Overlay] Fetching data for batsman:', name);
+      const teamId = matchData.batting_team === 'team1' ? matchData.team1_id : matchData.team2_id;
+      const team = teams.find(t => t.id === teamId);
+      const player = team?.players?.find(p => p.name === name);
+      if (!player) return null;
+      return {
+        ...player,
+        teamFull: team.fullName,
+        teamShort: team.shortName,
+        teamDept: team.department,
+        teamLogo: team.logo
+      };
+    };
+
+    // Helper to get bowler data
+    const getBowlerData = (name) => {
+      if (!name) return null;
+      const teamId = matchData.batting_team === 'team1' ? matchData.team2_id : matchData.team1_id;
+      const team = teams.find(t => t.id === teamId);
+      const player = team?.players?.find(p => p.name === name);
+      if (!player) return null;
+      return {
+        ...player,
+        teamFull: team.fullName,
+        teamShort: team.shortName,
+        teamDept: team.department,
+        teamLogo: team.logo
+      };
+    };
+
+    // 1. Queue Striker
+    if (striker && striker !== prevStrikerRef.current) {
+      const pData = getPlayerData(striker);
+      if (pData) setProfileQueue(prev => [...prev, { type: 'striker', ...pData }]);
+    }
+
+    // 2. Queue Non-Striker
+    if (nonStriker && nonStriker !== prevNonStrikerRef.current) {
+      const pData = getPlayerData(nonStriker);
+      if (pData) setProfileQueue(prev => [...prev, { type: 'non-striker', ...pData }]);
+    }
+
+    // 3. Queue Bowler
+    if (bowler && bowler !== prevBowlerRef.current) {
+      const pData = getBowlerData(bowler);
+      if (pData) setProfileQueue(prev => [...prev, { type: 'bowler', ...pData }]);
+    }
+
+    prevStrikerRef.current = striker;
+    prevNonStrikerRef.current = nonStriker;
+    prevBowlerRef.current = bowler;
+  }, [matchData?.striker_name, matchData?.non_striker_name, matchData?.bowler_name, teams, matchData?.batting_team]);
+
+  // Queue Processor
+  useEffect(() => {
+    if (profileQueue.length > 0 && !isProcessingQueue) {
+      setIsProcessingQueue(true);
+      const nextProfile = profileQueue[0];
+
+      // Initial Delay: 5s
+      setTimeout(() => {
+        setProfileToShow(nextProfile);
+        
+        // Show Duration: 5s
+        setTimeout(() => {
+          setProfileToShow(null);
+          
+          // Gap/Break Duration: 4s
+          setTimeout(() => {
+            setProfileQueue(prev => prev.slice(1));
+            setIsProcessingQueue(false);
+          }, 4000);
+        }, 5000);
+      }, 5000);
+    }
+  }, [profileQueue, isProcessingQueue]);
+
+  // Event Animations (4, 6, W)
+  useEffect(() => {
+    if (!matchData) return;
+    let recentBalls = [];
+    try {
+      recentBalls = JSON.parse(matchData.recent_balls || '[]');
+    } catch (e) {
+      console.error('[Overlay] Error parsing recent_balls:', e);
+      recentBalls = [];
+    }
+    
+    // Detect if a new ball was added
+    if (recentBalls.length > 0) {
+      const lastBall = recentBalls[recentBalls.length - 1];
+      const prevBalls = prevRecentBallsRef.current;
+      const lastPrevBall = prevBalls[prevBalls.length - 1];
+
+      // Compare labels or check if length increased (and not cleared)
+      const isNewBall = prevBalls.length === 0 || 
+                       (recentBalls.length > prevBalls.length) ||
+                       (lastBall.timestamp !== lastPrevBall?.timestamp);
+
+      if (isNewBall) {
+        const label = String(lastBall.label || lastBall).toUpperCase();
+        if (label === '4') {
+          setActiveEvent('four');
+          setTimeout(() => setActiveEvent(null), 4000);
+        } else if (label === '6') {
+          setActiveEvent('six');
+          setTimeout(() => setActiveEvent(null), 4500);
+        } else if (label.includes('W') && !label.includes('WD') && !label.includes('WIDE')) {
+          setActiveEvent('wicket');
+          setTimeout(() => setActiveEvent(null), 4500);
+        } else if (label.includes('WD') && (label.includes('4') || label.includes('5'))) {
+          setActiveEvent('wide4');
+          setTimeout(() => setActiveEvent(null), 4500);
+        } else if (label.includes('NB') && label.includes('4')) {
+          setActiveEvent('nb4');
+          setTimeout(() => setActiveEvent(null), 4500);
+        } else if (label.includes('LB') && (label.includes('4') || label.includes('5'))) {
+          setActiveEvent('lb4');
+          setTimeout(() => setActiveEvent(null), 4500);
+        } else if (label.includes('NB') && label.includes('6')) {
+          setActiveEvent('nb6');
+          setTimeout(() => setActiveEvent(null), 5000);
+        }
+      }
+    }
+    prevRecentBallsRef.current = recentBalls;
+  }, [matchData?.recent_balls]);
+
   useEffect(() => { if (matchData && styleData) setShow(true); }, [matchData, styleData]);
 
-  if (!hostId) {
+  // We only show the "Connection Required" screen if we have NO data and NO hostId.
+  // If we have matchData (from Socket.IO), we show the overlay regardless of hostId.
+  if (!hostId && !matchData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black/20 text-white font-display">
-        <div className="text-center glass p-8 rounded-2xl border border-white/5">
-          <h2 className="text-xl font-bold mb-2">Overlay Offline</h2>
-          <p className="text-slate-400 text-sm">Add <code className="text-emerald-400 px-1 bg-black/20 rounded">?host=ID</code> to your URL to connect.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white font-sans overflow-hidden relative">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500 blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 max-w-md w-full px-8">
+          <div className="glass p-10 rounded-3xl border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] text-center backdrop-blur-2xl">
+            <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+              <Radio size={40} className="text-emerald-500 animate-pulse" />
+            </div>
+            
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2 bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">
+              Connection Required
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8">
+              The overlay needs to sync with your Admin Panel. Please use the complete URL provided in your 
+              <span className="text-white font-bold"> Style & Position</span> tab.
+            </p>
+
+            <div className="bg-black/40 rounded-2xl p-5 border border-white/5 space-y-3">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Troubleshooting</div>
+              <div className="flex items-start gap-3 text-left">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-emerald-400">1</span>
+                </div>
+                <p className="text-xs text-slate-300">Open your <b>Admin Panel</b></p>
+              </div>
+              <div className="flex items-start gap-3 text-left">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-emerald-400">2</span>
+                </div>
+                <p className="text-xs text-slate-300">Go to <b>Style & Position</b> tab</p>
+              </div>
+              <div className="flex items-start gap-3 text-left">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-emerald-400">3</span>
+                </div>
+                <p className="text-xs text-slate-300 font-medium text-emerald-400">Copy the "Overlay URL for OBS" and paste it into your browser source.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <Shield size={12} className="text-slate-600" />
+              HMH-CS Broadcast System v1.0
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -296,7 +899,7 @@ export default function Overlay() {
   const layoutProps = {
     teamName, runs, wickets, bowlingTeam, oversDisplay, totalBalls, target, innings, matchStatus, matchName,
     strikerName, strikerRuns, strikerBalls, nonStrikerName, bowlerName, bowlerFigs, bowlerOvers,
-    primaryColor, secondaryColor, bgOpacity, showTimeline, recentBalls, matchData
+    primaryColor, secondaryColor, bgOpacity, showTimeline, recentBalls, matchData, styleData
   };
 
   return (
@@ -307,136 +910,560 @@ export default function Overlay() {
         <RealTimeClock className="text-white" fontSize={parseInt(styleData.clock_font_size || '18')} />
       </div>
 
-      <div className="fixed w-full" style={{ left: `${xOffset - 50}%`, top: `${yOffset}%`, transform: 'translateY(-100%)', padding: '0 24px', zIndex: 9999 }}>
-        <AnimatePresence mode="wait">
-          {showMessageOnly ? (
+        <AnimatePresence>
+          {showMessageOnly && (
             <motion.div
               key="message-only"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="flex flex-col items-center justify-center text-center py-20 px-10 rounded-3xl border border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed z-[10002] flex items-center justify-center p-10 overflow-hidden"
               style={{ 
-                backgroundColor: msgBgColor,
-                opacity: msgBgOpacity,
-                backgroundImage: msgBgImage ? `url(${msgBgImage})` : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
+                width: `${styleData.msg_panel_width || 100}%`,
+                height: `${styleData.msg_panel_height || 100}%`,
+                left: `${(100 - (styleData.msg_panel_width || 100)) / 2}%`,
+                top: `${(100 - (styleData.msg_panel_height || 100)) / 2}%`,
+                borderRadius: `${styleData.msg_panel_radius || 0}px`,
+                boxShadow: (styleData.msg_panel_width < 100 || styleData.msg_panel_height < 100) ? '0 0 100px rgba(0,0,0,0.5)' : 'none'
               }}
             >
-              {/* Blur Overlay if Image exists */}
-              {msgBgImage && <div className="absolute inset-0 bg-black/40 backdrop-blur-sm -z-10" />}
-              {/* Before Text */}
-              {msgBeforeText && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  transition={{ delay: 0.2 }}
-                  className="text-emerald-400 font-black uppercase tracking-[0.4em] mb-4"
-                  style={{ fontSize: `${msgBeforeFontSize}px` }}
-                >
-                  {msgBeforeText}
-                </motion.div>
-              )}
-              
-              {!msgBeforeText && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  transition={{ delay: 0.2 }}
-                  className="text-emerald-400 text-sm font-black uppercase tracking-[0.3em] mb-4"
-                >
-                  {isMatchEnded ? 'Match Completed' : (isInningsBreak ? 'Innings Break' : 'Match Preview')}
-                </motion.div>
-              )}
-              
-              {isPreMatch ? (
-                <div className="flex flex-col items-center text-center">
-                  {!matchData.toss_winner_name ? (
-                    <div className="flex items-center gap-16">
-                      <div className="flex flex-col items-center">
-                        <div className="text-white text-8xl font-black italic tracking-tighter leading-none mb-2">{matchData.team1_name}</div>
-                        <div className="text-white text-2xl font-bold tracking-tight opacity-90">{matchData.team1_full}</div>
-                        <div className="text-white/60 text-sm font-medium uppercase tracking-widest mt-1">{matchData.team1_dept}</div>
-                      </div>
-                      <div className="text-emerald-400 text-4xl font-black italic opacity-50">VS</div>
-                      <div className="flex flex-col items-center">
-                        <div className="text-white text-8xl font-black italic tracking-tighter leading-none mb-2">{matchData.team2_name}</div>
-                        <div className="text-white text-2xl font-bold tracking-tight opacity-90">{matchData.team2_full}</div>
-                        <div className="text-white/60 text-sm font-medium uppercase tracking-widest mt-1">{matchData.team2_dept}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="text-white text-6xl font-black italic tracking-tighter mb-4">
-                        {matchData.team1_name} VS {matchData.team2_name}
-                      </div>
-                      <div className="text-emerald-400 text-2xl font-bold tracking-tight opacity-90">
-                        {matchData.toss_winner_name} won the toss and decided to {matchData.toss_decision === 'bat' ? 'bat' : 'bowl'} first
-                      </div>
-                    </div>
-                  )}
+              {/* Specialized Event Backgrounds */}
+              <div className="absolute inset-0 transition-all duration-1000">
+                {isMatchEnded ? (
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-amber-900 opacity-95" />
+                ) : isInningsBreak ? (
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 opacity-95" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 opacity-95" />
+                )}
+                
+                {/* Dynamic Patterns / Particles */}
+                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                  {[...Array(15)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        y: [-40, 40, -40], 
+                        x: [-40, 40, -40],
+                        opacity: [0.05, 0.2, 0.05],
+                        rotate: [0, 360]
+                      }}
+                      transition={{ duration: 8 + Math.random() * 8, repeat: Infinity, ease: "linear" }}
+                      className="absolute bg-white/10 blur-3xl rounded-full"
+                      style={{ 
+                        width: Math.random() * 500 + 200, 
+                        height: Math.random() * 500 + 200,
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`
+                      }}
+                    />
+                  ))}
                 </div>
-              ) : (
-                <motion.h1 
-                  initial={{ y: 20, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  transition={{ delay: 0.4 }}
-                  className="leading-tight drop-shadow-2xl italic tracking-tighter whitespace-pre-line"
-                  style={{ 
-                    color: msgFontColor, 
-                    fontSize: `${msgFontSize}px`,
-                    fontStyle: msgFontStyle === 'italic' ? 'italic' : 'normal',
-                    fontWeight: getFontWeight(msgFontStyle),
-                    textShadow: msgTextShadow
-                  }}
-                >
-                  {currentDisplayMessage}
-                </motion.h1>
-              )}
+              </div>
 
-              {/* After Text */}
-              {msgAfterText && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  transition={{ delay: 0.6 }}
-                  className="text-white/60 font-medium uppercase tracking-[0.2em] mt-8"
-                  style={{ fontSize: `${msgAfterFontSize}px` }}
-                >
-                  {msgAfterText}
-                </motion.div>
-              )}
-
-              {!msgAfterText && (
-                <div className="mt-8 w-24 h-1 rounded-full" style={{ background: primaryColor }} />
-              )}
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="scoreboard"
-              initial={{ y: 50, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: -50, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 25 }} 
-              className="max-w-[98%] mx-auto relative"
-            >
-              {showFloatingBanner && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute -top-16 left-0 right-0 flex justify-center z-[100]"
-                >
-                  <div className="bg-emerald-500 text-white px-6 py-2 rounded-full font-black text-sm shadow-2xl border border-white/20 animate-bounce whitespace-pre-line text-center">
-                    {isPreMatch ? '🏏' : '🎉'} {currentDisplayMessage}
+              {/* CONTENT AREA (Zoomable) */}
+              <motion.div 
+                initial={{ scale: 0.5, y: 50, opacity: 0 }}
+                animate={{ 
+                  scale: (parseFloat(styleData.msg_panel_scale || '100')) / 100, 
+                  y: 0, 
+                  opacity: 1 
+                }}
+                className="relative z-10 w-full max-w-6xl flex flex-col items-center origin-center"
+              >
+                {/* ─── CASE 1: MATCH RESULT ─── */}
+                {isMatchEnded && (
+                  <div className="flex flex-col items-center gap-10">
+                    <motion.div 
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      className="w-56 h-56 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-[0_0_120px_rgba(245,158,11,0.5)] border-[15px] border-white/20"
+                    >
+                      <Radio size={120} className="text-white animate-pulse" />
+                    </motion.div>
+                    
+                    <div className="text-center">
+                      <motion.h2 
+                        className="text-amber-400 text-4xl font-black uppercase tracking-[0.6em] mb-4 italic"
+                        animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.05, 1] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      >
+                        CHAMPIONS
+                      </motion.h2>
+                      <h1 className="text-white text-[10rem] font-black italic tracking-tighter leading-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] mb-8">
+                        {matchData.final_result_message?.split(' won')[0] || 'VICTORY'}
+                      </h1>
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="bg-white/10 backdrop-blur-2xl px-16 py-6 rounded-[30px] border border-white/20 shadow-2xl"
+                      >
+                        <span className="text-white text-5xl font-black italic tracking-wider">
+                          {matchData.final_result_message?.includes('won') ? 'MATCH WON' : 'COMPLETED'}
+                        </span>
+                      </motion.div>
+                    </div>
                   </div>
-                </motion.div>
-              )}
-              {layoutType === 't-sports' ? <LayoutTSports {...layoutProps} /> : <LayoutDefault {...layoutProps} />}
+                )}
+
+                {/* ─── CASE 2: INNINGS BREAK ─── */}
+                {isInningsBreak && (
+                  <div className="flex flex-col items-center gap-12 w-full">
+                    <div className="text-center">
+                      <h2 className="text-blue-400 text-3xl font-black uppercase tracking-[0.5em] mb-6 italic">INNINGS COMPLETED</h2>
+                      <h1 className="text-white text-8xl font-black italic tracking-tight mb-4 leading-none">
+                        {matchData.team1_name} <span className="text-blue-500 opacity-40">VS</span> {matchData.team2_name}
+                      </h1>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-16 w-full max-w-5xl mt-8">
+                      <motion.div 
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="bg-white/5 backdrop-blur-2xl p-12 rounded-[50px] border border-white/10 text-center flex flex-col justify-center shadow-2xl relative overflow-hidden group"
+                      >
+                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
+                        <span className="text-slate-400 text-2xl font-black uppercase tracking-[0.3em] mb-4">Final Score</span>
+                        <div className="text-white text-[10rem] font-black tabular-nums leading-none">
+                          {matchData.runs}<span className="text-blue-500 text-6xl ml-2">/{matchData.wickets}</span>
+                        </div>
+                        <span className="text-slate-500 text-3xl font-bold mt-6 italic">({matchData.overs}.{matchData.balls} Overs)</span>
+                      </motion.div>
+
+                      <motion.div 
+                        initial={{ x: 50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="bg-gradient-to-br from-blue-600/30 to-indigo-600/30 backdrop-blur-2xl p-12 rounded-[50px] border-4 border-blue-500/40 text-center flex flex-col justify-center shadow-[0_30px_70px_rgba(0,0,0,0.4)] relative"
+                      >
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-500 px-8 py-2 rounded-full text-white font-black text-xl shadow-lg">TARGET</div>
+                        <div className="text-white text-[14rem] font-black leading-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]">
+                          {parseInt(matchData.runs) + 1}
+                        </div>
+                        <span className="text-blue-300 text-3xl font-black mt-4 italic uppercase tracking-widest">{matchData.team2_name} NEEDS</span>
+                      </motion.div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── CASE 3: TOSS / PRE-MATCH ─── */}
+                {!isMatchEnded && !isInningsBreak && isPreMatch && (
+                  <div className="flex flex-col items-center gap-16 w-full">
+                    <div className="flex items-center gap-24 justify-center w-full">
+                      <motion.div 
+                        initial={{ x: -150, opacity: 0, rotate: -10 }}
+                        animate={{ x: 0, opacity: 1, rotate: 0 }}
+                        className="flex flex-col items-center gap-8"
+                      >
+                        <div className="w-80 h-80 bg-white/5 rounded-[60px] flex items-center justify-center border-2 border-white/10 p-12 shadow-[0_40px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl relative group overflow-hidden">
+                           <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-colors" />
+                           <img src="/api/placeholder/400/400" className="w-full h-full object-contain opacity-50 grayscale contrast-125" />
+                        </div>
+                        <div className="text-center">
+                           <h3 className="text-white text-7xl font-black italic tracking-tighter uppercase leading-none mb-2">{matchData.team1_name}</h3>
+                           <p className="text-emerald-400/60 text-xl font-bold tracking-[0.4em] uppercase">Challenger</p>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        initial={{ scale: 0, rotate: 180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        className="relative"
+                      >
+                        <div className="absolute inset-0 bg-emerald-500 blur-[80px] opacity-40 animate-pulse" />
+                        <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center text-emerald-950 text-7xl font-black italic relative z-10 border-[10px] border-emerald-500 shadow-[0_0_60px_rgba(16,185,129,0.5)]">
+                          VS
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        initial={{ x: 150, opacity: 0, rotate: 10 }}
+                        animate={{ x: 0, opacity: 1, rotate: 0 }}
+                        className="flex flex-col items-center gap-8"
+                      >
+                        <div className="w-80 h-80 bg-white/5 rounded-[60px] flex items-center justify-center border-2 border-white/10 p-12 shadow-[0_40px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl relative group overflow-hidden">
+                           <div className="absolute inset-0 bg-teal-500/5 group-hover:bg-teal-500/10 transition-colors" />
+                           <img src="/api/placeholder/400/400" className="w-full h-full object-contain opacity-50 grayscale contrast-125" />
+                        </div>
+                        <div className="text-center">
+                           <h3 className="text-white text-7xl font-black italic tracking-tighter uppercase leading-none mb-2">{matchData.team2_name}</h3>
+                           <p className="text-teal-400/60 text-xl font-bold tracking-[0.4em] uppercase">Defender</p>
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    <motion.div 
+                      initial={{ y: 80, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.6, type: 'spring' }}
+                      className="bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-emerald-600/20 backdrop-blur-2xl px-24 py-10 rounded-[60px] border-2 border-emerald-500/30 text-center shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50" />
+                      <h2 className="text-emerald-400 text-3xl font-black uppercase tracking-[0.6em] mb-4">Official Toss</h2>
+                      <p className="text-white text-5xl font-black italic tracking-wide drop-shadow-lg">
+                        {matchData.toss_winner_name ? (
+                          <>
+                            {matchData.toss_winner_name.toUpperCase()} WON & ELECTED TO <span className="text-emerald-300 underline underline-offset-8">{matchData.toss_decision === 'bat' ? 'BAT' : 'BOWL'}</span>
+                          </>
+                        ) : (
+                          "WARMING UP • MATCH STARTING"
+                        )}
+                      </p>
+                    </motion.div>
+                  </div>
+                )}
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+
+        <div className="fixed w-full" style={{ left: `${xOffset - 50}%`, top: `${yOffset}%`, transform: 'translateY(-100%)', padding: '0 24px', zIndex: 9999 }}>
+          <AnimatePresence mode="wait">
+            {!showMessageOnly && (
+              <motion.div 
+                key="scoreboard"
+                initial={{ y: 50, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }} 
+                exit={{ y: -50, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 25 }} 
+                className="max-w-[98%] mx-auto relative"
+              >
+                {showFloatingBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute -top-16 left-0 right-0 flex justify-center z-[100]"
+                  >
+                    <div className="bg-emerald-500 text-white px-6 py-2 rounded-full font-black text-sm shadow-2xl border border-white/20 animate-bounce whitespace-pre-line text-center">
+                      {isPreMatch ? '🏏' : '🎉'} {currentDisplayMessage}
+                    </div>
+                  </motion.div>
+                )}
+                {layoutType === 'hmh-cs' ? <LayoutHMHCS {...layoutProps} /> :
+                  layoutType === 'diamond' ? <LayoutDiamond {...layoutProps} /> : 
+                  layoutType === 't-sports' ? <LayoutTSports {...layoutProps} /> : 
+                  <LayoutDefault {...layoutProps} />}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      {/* Free Hit Big Screen Animation */}
+      <AnimatePresence>
+        {showFreeHitBanner && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.5 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
+          >
+            <div className="relative">
+              {/* Outer Glow */}
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="absolute inset-0 bg-amber-500 blur-[80px] rounded-full"
+              />
+              
+              {/* Main Content */}
+              <motion.div 
+                className="relative bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 px-24 py-12 rounded-[40px] border-8 border-white shadow-[0_0_100px_rgba(245,158,11,0.6)]"
+                style={{ skewX: '-10deg' }}
+              >
+                <div className="flex flex-col items-center">
+                  <motion.div 
+                    animate={{ rotate: [0, -2, 2, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                  >
+                    <Zap size={80} className="text-white fill-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]" />
+                  </motion.div>
+                  <h1 className="text-white text-9xl font-black italic tracking-tighter leading-none drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]">
+                    FREE HIT
+                  </h1>
+                  <div className="mt-4 flex items-center gap-4">
+                    <div className="h-1.5 w-20 bg-white/40 rounded-full" />
+                    <span className="text-white text-2xl font-black uppercase tracking-[0.4em] drop-shadow-md">High Stakes</span>
+                    <div className="h-1.5 w-20 bg-white/40 rounded-full" />
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Particle Sprinkles (Small squares) */}
+              {[...Array(12)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ x: 0, y: 0, opacity: 0 }}
+                  animate={{ 
+                    x: (Math.random() - 0.5) * 800, 
+                    y: (Math.random() - 0.5) * 800,
+                    opacity: [0, 1, 0],
+                    rotate: 360
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: Math.random() }}
+                  className="absolute w-3 h-3 bg-amber-200 rounded-sm"
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* BIG EVENT ANIMATIONS (4, 6, WICKET) */}
+      <AnimatePresence>
+        {activeEvent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-none"
+            style={{ perspective: '1000px' }}
+          >
+            {/* FOUR ANIMATION */}
+            {activeEvent === 'four' && (
+              <motion.div
+                initial={{ scale: 0.5, rotateY: 90 }}
+                animate={{ scale: 1, rotateY: 0 }}
+                exit={{ scale: 1.5, opacity: 0, rotateY: -90 }}
+                className="relative flex flex-col items-center"
+              >
+                <div className="absolute inset-0 bg-emerald-500 blur-[120px] opacity-40 rounded-full" />
+                <motion.div 
+                  className="relative bg-emerald-600 px-20 py-8 border-[6px] border-white shadow-2xl rounded-tr-[40px] rounded-bl-[40px]"
+                  style={{ skewX: '-12deg' }}
+                >
+                  <h2 className="text-white text-9xl font-black italic tracking-tighter drop-shadow-2xl">
+                    FOUR!
+                  </h2>
+                  <div className="absolute -top-6 -right-6 bg-white text-emerald-600 px-6 py-2 rounded-xl font-black text-2xl shadow-lg">
+                    4 RUNS
+                  </div>
+                </motion.div>
+                <motion.div 
+                  animate={{ x: [-20, 20, -20] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="mt-6 flex gap-4"
+                >
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-12 h-2 bg-emerald-400/50 rounded-full" />
+                  ))}
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* SIX ANIMATION */}
+            {activeEvent === 'six' && (
+              <motion.div
+                initial={{ scale: 0, rotate: -45 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 2, opacity: 0 }}
+                className="relative flex flex-col items-center"
+              >
+                <motion.div 
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                  className="absolute inset-0 bg-purple-500 blur-[150px] rounded-full" 
+                />
+                <motion.div 
+                  className="relative bg-gradient-to-r from-purple-600 to-indigo-600 px-24 py-10 border-[8px] border-white shadow-[0_0_80px_rgba(168,85,247,0.6)] rounded-[60px]"
+                >
+                  <h2 className="text-white text-[10rem] font-black italic tracking-tight leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+                    SIX!!
+                  </h2>
+                  <motion.div 
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    className="absolute -bottom-4 right-10 bg-white text-purple-700 px-8 py-2 rounded-full font-black text-3xl shadow-xl border-4 border-purple-200"
+                  >
+                    MAXIMUM
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* WICKET ANIMATION */}
+            {activeEvent === 'wicket' && (
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -100 }}
+                className="relative flex flex-col items-center"
+              >
+                <motion.div 
+                  animate={{ x: [-10, 10, -10] }}
+                  transition={{ duration: 0.1, repeat: 10 }}
+                  className="absolute inset-0 bg-red-600 blur-[100px] opacity-30" 
+                />
+                <div className="relative bg-red-700 px-20 py-10 border-x-[12px] border-white shadow-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-20" />
+                  <h2 className="text-white text-9xl font-black italic tracking-tighter drop-shadow-[0_5px_15px_rgba(0,0,0,0.7)] text-center">
+                    OUT!
+                  </h2>
+                  <div className="mt-4 text-white/80 text-xl font-black uppercase tracking-[0.8em] text-center">
+                    WICKET DOWN
+                  </div>
+                </div>
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  className="h-2 bg-white mt-4"
+                />
+              </motion.div>
+            )}
+
+            {/* WIDE + 4 ANIMATION */}
+            {activeEvent === 'wide4' && (
+              <motion.div
+                initial={{ rotateX: 90 }}
+                animate={{ rotateX: 0 }}
+                exit={{ rotateX: -90, opacity: 0 }}
+                className="relative flex flex-col items-center"
+              >
+                <div className="absolute inset-0 bg-blue-500 blur-[120px] opacity-40 rounded-full" />
+                <motion.div 
+                  className="relative bg-gradient-to-b from-blue-600 to-blue-800 px-24 py-10 border-[6px] border-amber-400 shadow-2xl rounded-2xl"
+                >
+                  <h2 className="text-white text-8xl font-black italic tracking-tighter drop-shadow-2xl text-center leading-none">
+                    WIDE + 4
+                  </h2>
+                  <div className="mt-2 text-amber-400 text-3xl font-black uppercase tracking-[0.3em] text-center">
+                    5 RUNS ADDED
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* NO BALL + 4 ANIMATION */}
+            {activeEvent === 'nb4' && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.5, opacity: 0 }}
+                className="relative flex flex-col items-center"
+              >
+                <div className="absolute inset-0 bg-yellow-500 blur-[150px] opacity-40" />
+                <motion.div 
+                  className="relative bg-slate-900 px-20 py-12 border-y-8 border-yellow-400 shadow-[0_0_60px_rgba(234,179,8,0.5)]"
+                >
+                  <h2 className="text-yellow-400 text-8xl font-black italic tracking-tighter text-center">
+                    NO BALL + 4
+                  </h2>
+                  <div className="mt-4 bg-yellow-400 text-slate-900 px-6 py-2 rounded font-black text-2xl uppercase tracking-widest text-center">
+                    FREE HIT REMAINS
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* LEG BYE + 4 ANIMATION */}
+            {activeEvent === 'lb4' && (
+              <motion.div
+                initial={{ x: -200, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 200, opacity: 0 }}
+                className="relative flex flex-col items-center"
+              >
+                <div className="absolute inset-0 bg-slate-400 blur-[100px] opacity-20" />
+                <div className="relative bg-slate-200 px-20 py-8 border-b-[10px] border-slate-800 shadow-2xl">
+                  <h2 className="text-slate-800 text-8xl font-black italic tracking-tighter text-center uppercase">
+                    Leg Bye 4
+                  </h2>
+                  <div className="mt-2 h-1 bg-slate-400 w-full" />
+                </div>
+              </motion.div>
+            )}
+
+            {/* NO BALL + 6 ANIMATION */}
+            {activeEvent === 'nb6' && (
+              <motion.div
+                initial={{ scale: 2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                className="relative flex flex-col items-center"
+              >
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 bg-gradient-to-r from-amber-500 via-purple-500 to-amber-500 blur-[150px] opacity-50 rounded-full" 
+                />
+                <motion.div 
+                  className="relative bg-black px-28 py-14 border-[10px] border-amber-400 shadow-[0_0_100px_rgba(245,158,11,0.8)] rounded-none"
+                  style={{ skewX: '-5deg' }}
+                >
+                  <h2 className="text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 text-[9rem] font-black italic tracking-tighter text-center leading-none">
+                    NB + 6!!
+                  </h2>
+                  <div className="mt-4 text-white text-4xl font-black uppercase tracking-[0.5em] text-center border-t-4 border-white/20 pt-4">
+                    7 RUNS DAMAGE
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {profileToShow && (
+          <motion.div
+            initial={{ x: -400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -400, opacity: 0 }}
+            className="fixed z-[100] flex items-center"
+            style={{ 
+              bottom: `${styleData.profile_y || 24}%`, 
+              left: `${styleData.profile_x || 10}%` 
+            }}
+          >
+            {/* Logo Section */}
+            <div className="w-24 h-24 bg-white rounded-l-2xl flex items-center justify-center p-3 shadow-2xl border-y border-l border-white/20">
+              {profileToShow.teamLogo ? (
+                <img src={profileToShow.teamLogo} className="w-full h-full object-contain" alt="Logo" />
+              ) : (
+                <Users size={40} className="text-slate-300" />
+              )}
+            </div>
+
+            {/* Content Section */}
+            <div 
+              className={`h-24 px-8 flex flex-col justify-center shadow-2xl border-y border-r border-white/20 rounded-r-2xl min-w-[400px] relative overflow-hidden ${
+                profileToShow.type === 'striker' 
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-800' 
+                  : profileToShow.type === 'non-striker'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-800'
+                    : 'bg-gradient-to-r from-slate-700 to-slate-900'
+              }`}
+            >
+              {/* Decorative Accent */}
+              <div className="absolute top-0 right-0 w-32 h-full bg-white/5 skew-x-[30deg] translate-x-16" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3">
+                  <span className="bg-white text-slate-900 px-2 py-0.5 rounded font-black text-sm shadow-lg">
+                    #{profileToShow.jersey || '00'}
+                  </span>
+                  <h3 className="text-white text-3xl font-black italic uppercase tracking-tighter drop-shadow-lg">
+                    {profileToShow.name}
+                  </h3>
+                </div>
+                
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest bg-black/30 px-2 py-0.5 rounded border border-white/10">
+                    {profileToShow.type === 'bowler' ? 'BOWLING' : (profileToShow.teamDept || 'BATTING')}
+                  </span>
+                  <div className="w-1 h-1 rounded-full bg-white/30" />
+                  <span className="text-white/90 text-sm font-black uppercase tracking-wider">
+                    {profileToShow.teamFull} <span className="text-white/50 font-medium">({profileToShow.teamShort})</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Profile Type Label */}
+              <div className="absolute bottom-1 right-4 text-white/5 text-5xl font-black italic pointer-events-none uppercase tracking-tighter">
+                {profileToShow.type}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
