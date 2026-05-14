@@ -12,6 +12,8 @@ export default function StyleControl({ styleData, emit, hostId }) {
     profile_x: '10', profile_y: '24',
     msg_panel_width: '100', msg_panel_height: '100',
     msg_panel_scale: '100', msg_panel_radius: '0',
+    overlay_scale: '100',
+    text_scale: '100',
     profiles: []
   });
   const [newProfileName, setNewProfileName] = useState('');
@@ -61,7 +63,9 @@ export default function StyleControl({ styleData, emit, hostId }) {
     const settings = {
       x_offset: ls.x_offset, y_offset: ls.y_offset,
       primary_color: ls.primary_color, secondary_color: ls.secondary_color,
-      bg_opacity: ls.bg_opacity, show_timeline: ls.show_timeline
+      bg_opacity: ls.bg_opacity, show_timeline: ls.show_timeline,
+      overlay_scale: ls.overlay_scale,
+      text_scale: ls.text_scale
     };
     emit('profile:create', { name: newProfileName, layout_type: ls.layout_type, settings });
     setNewProfileName('');
@@ -181,6 +185,8 @@ export default function StyleControl({ styleData, emit, hostId }) {
             <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Scoreboard</div>
             <Slider label="X Offset" field="x_offset" />
             <Slider label="Y Offset" field="y_offset" />
+            <Slider label="Scoreboard Scale %" field="overlay_scale" min={50} max={200} step={1} />
+            <Slider label="Global Text Size %" field="text_scale" min={50} max={150} step={1} />
             
             <div className="pt-4 mt-4 border-t border-white/5">
               <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Player Intro Card</div>

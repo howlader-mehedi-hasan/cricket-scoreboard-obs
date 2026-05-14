@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus, Undo2, BarChart2, Settings, Users, Wind, Zap, AlertTriangle, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus, Undo2, BarChart2, Settings, Users, Wind, Zap, AlertTriangle, X, Eye } from 'lucide-react';
 
 export default function MatchControl({ matchData, emit, teams = [] }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -13,11 +13,53 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     additionalRuns: 0,        // runs completed after throw (if not boundary)
   });
   const [showRunOutModal, setShowRunOutModal] = useState(false);
+  const [showCustomExtraModal, setShowCustomExtraModal] = useState(false);
+  const [customExtraConfig, setCustomExtraConfig] = useState({
+    type: 'wide',
+    runs: 0,
+    isOffBat: false
+  });
   const [runOutConfig, setRunOutConfig] = useState({
     playerOut: 'striker',
     runsCompleted: 0,
     deliveryType: 'normal'
   });
+
+  const [changingStriker, setChangingStriker] = useState(false);
+  const [changingNonStriker, setChangingNonStriker] = useState(false);
+  const [changingBowler, setChangingBowler] = useState(false);
+
+  // Sync jerseys if missing
+  useEffect(() => {
+    if (!matchData) return;
+    const updates = [];
+    const sName = matchData.striker_name || '';
+    const nsName = matchData.non_striker_name || '';
+    const bName = matchData.bowler_name || '';
+    
+    const bTeamId = matchData.batting_team === 'team2' ? matchData.team2_id : matchData.team1_id;
+    const bwTeamId = matchData.batting_team === 'team2' ? matchData.team1_id : matchData.team2_id;
+    const cBattingTeam = teams.find(t => t.id === bTeamId);
+    const cBowlingTeam = teams.find(t => t.id === bwTeamId);
+    const bPlayers = cBattingTeam?.players || [];
+    const bwPlayers = cBowlingTeam?.players || [];
+
+    if (sName && !matchData.striker_jersey) {
+      const p = bPlayers.find(pl => pl.name === sName);
+      if (p?.jersey) updates.push({ field: 'striker_jersey', value: p.jersey });
+    }
+    if (nsName && !matchData.non_striker_jersey) {
+      const p = bPlayers.find(pl => pl.name === nsName);
+      if (p?.jersey) updates.push({ field: 'non_striker_jersey', value: p.jersey });
+    }
+    if (bName && !matchData.bowler_jersey) {
+      const p = bwPlayers.find(pl => pl.name === bName);
+      if (p?.jersey) updates.push({ field: 'bowler_jersey', value: p.jersey });
+    }
+    if (updates.length > 0) {
+      emit('match:updateBulk', { updates });
+    }
+  }, [matchData, teams]);
 
   if (!matchData) return null;
 
@@ -44,8 +86,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   const battingPlayers = currentBattingTeam?.players || [];
   const bowlingPlayers = currentBowlingTeam?.players || [];
 
+  const getJersey = (name, players) => {
+    if (!name) return null;
+    const p = players.find(player => player.name === name);
+    return p?.jersey ? `#${p.jersey}` : null;
+  };
+
   // Helper components
-  const EditableField = ({ label, field, wide = false }) => (
+  const EditableField = ({ label, field, wide = false, prefix = null }) => (
     <div className={`${wide ? 'col-span-2' : ''}`}>
       <label className="text-[11px] text-slate-400 uppercase tracking-wider font-medium block mb-1">{label}</label>
       {editingField === field ? (
@@ -64,70 +112,113 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           className="flex items-center gap-2 cursor-pointer group"
           onClick={() => startEdit(field)}
         >
-          <span className="text-white text-sm font-medium">{matchData[field] || '—'}</span>
+          <span className="text-white text-sm font-medium">
+            {prefix && <span className="text-emerald-500 font-black mr-1.5">{prefix}</span>}
+            {matchData[field] || '—'}
+          </span>
           <Edit3 size={12} className="text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       )}
     </div>
   );
 
-  const PlayerSelect = ({ label, field, players, isBowler = false }) => (
+  const PlayerSelect = ({ label, field, players, isBowler = false, onSelect }) => (
     <div className="w-full">
-      <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">{label}</label>
-      <select
-        className="w-full bg-slate-800/50 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-emerald-500 appearance-none cursor-pointer"
-        value={matchData[field] || ''}
-        onChange={(e) => {
-          const val = e.target.value;
-          const updates = [];
-          if (isBowler) {
-            const history = JSON.parse(matchData.bowlers_history || '{}');
-            // 1. Save current bowler stats to history before switching
-            if (matchData.bowler_name) {
-              history[matchData.bowler_name] = {
-                runs: parseInt(matchData.bowler_runs || '0'),
-                wickets: parseInt(matchData.bowler_wickets || '0'),
-                overs: matchData.bowler_overs || '0.0'
-              };
+      {label && <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">{label}</label>}
+      <div className="relative group">
+        <select
+          className="w-full bg-slate-800 border border-emerald-500/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500 appearance-none cursor-pointer transition-all pr-10"
+          value={matchData[field] || ''}
+          autoFocus
+          onBlur={onSelect}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'custom') {
+               startEdit(field);
+               onSelect?.();
+               return;
             }
+            const updates = [];
+            const batHistory = JSON.parse(matchData.batters_history || '{}');
 
-            // 2. Load new bowler stats if they exist in history
-            const newStats = history[val] || { runs: 0, wickets: 0, overs: '0.0' };
-            
-            updates.push(
-              { field: 'bowler_name', value: val },
-              { field: 'bowler_runs', value: newStats.runs },
-              { field: 'bowler_wickets', value: newStats.wickets },
-              { field: 'bowler_overs', value: newStats.overs },
-              { field: 'bowlers_history', value: JSON.stringify(history) }
-            );
-          } else {
-            updates.push(
-              { field: field, value: val },
-              { field: field.replace('_name', '_runs'), value: 0 },
-              { field: field.replace('_name', '_balls'), value: 0 }
-            );
-          }
-          if (matchData.is_innings_break === 'true' || matchData.is_pre_match === 'true') {
-            updates.push(
-              { field: 'is_innings_break', value: 'false' },
-              { field: 'is_pre_match', value: 'false' }
-            );
-          }
-          emit('match:updateBulk', { updates });
-        }}
-      >
-        <option value="">-- Select --</option>
-        {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-        <option value="custom">Custom Entry...</option>
-      </select>
+            if (isBowler) {
+              const history = JSON.parse(matchData.bowlers_history || '{}');
+              if (matchData.bowler_name) {
+                history[matchData.bowler_name] = {
+                  runs: parseInt(matchData.bowler_runs || '0'),
+                  wickets: parseInt(matchData.bowler_wickets || '0'),
+                  overs: matchData.bowler_overs || '0.0'
+                };
+              }
+              const newStats = history[val] || { runs: 0, wickets: 0, overs: '0.0' };
+              const selectedPlayer = players.find(p => p.name === val);
+              updates.push(
+                { field: 'bowler_name', value: val },
+                { field: 'bowler_runs', value: newStats.runs },
+                { field: 'bowler_wickets', value: newStats.wickets },
+                { field: 'bowler_overs', value: newStats.overs },
+                { field: 'bowler_jersey', value: selectedPlayer?.jersey || '' },
+                { field: 'bowlers_history', value: JSON.stringify(history) }
+              );
+            } else {
+              // Save current batsman to history before switching
+              const currentName = matchData[field];
+              if (currentName) {
+                batHistory[currentName] = {
+                  runs: parseInt(matchData[field.replace('_name', '_runs')] || '0'),
+                  balls: parseInt(matchData[field.replace('_name', '_balls')] || '0'),
+                  isOut: false
+                };
+              }
+
+              // Load new batsman stats if exists
+              const newStats = batHistory[val] || { runs: 0, balls: 0, isOut: false };
+              
+              const selectedPlayer = players.find(p => p.name === val);
+              
+              updates.push(
+                { field: field, value: val },
+                { field: field.replace('_name', '_runs'), value: newStats.runs },
+                { field: field.replace('_name', '_balls'), value: newStats.balls },
+                { field: field.replace('_name', '_jersey'), value: selectedPlayer?.jersey || '' },
+                { field: 'batters_history', value: JSON.stringify(batHistory) }
+              );
+            }
+            if (matchData.is_innings_break === 'true' || matchData.is_pre_match === 'true') {
+              updates.push(
+                { field: 'is_innings_break', value: 'false' },
+                { field: 'is_pre_match', value: 'false' }
+              );
+            }
+            emit('match:updateBulk', { updates });
+            onSelect?.();
+          }}
+        >
+          <option value="">-- Select Player --</option>
+          {players.map(p => (
+            <option key={p.id} value={p.name}>
+              {p.jersey ? `#${p.jersey} - ` : ''}{p.name}
+            </option>
+          ))}
+          <option value="custom">✎ Custom Entry...</option>
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400">
+           <ChevronDown size={16} />
+        </div>
+      </div>
     </div>
   );
 
   // Helper to add runs + update ball count + update striker stats
-  function addRuns(runsToAdd, isLegal = true, isExtra = false, customLabel = null, deliveryType = 'normal') {
+  function addRuns(runsToAdd, isLegal = true, isExtra = false, customLabel = null, deliveryType = 'normal', runsOffBat = null) {
     const updates = [];
     updates.push({ field: 'runs', value: runs + runsToAdd });
+    
+    // Partnership Logic
+    const pRuns = parseInt(matchData.partnership_runs || '0');
+    const pBalls = parseInt(matchData.partnership_balls || '0');
+    updates.push({ field: 'partnership_runs', value: pRuns + runsToAdd });
+    updates.push({ field: 'partnership_balls', value: pBalls + (isLegal || deliveryType === 'noball' ? 1 : 0) });
 
     // FIX: Detect if we are starting a new over. 
     // If balls === 0 and recent_balls has legal deliveries, it's from the previous over.
@@ -161,7 +252,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       updates.push({ field: 'bowler_overs', value: `${newBWhole}.${newBBalls}` });
     }
 
-    updates.push({ field: 'bowler_runs', value: bowlerRuns + runsToAdd });
+    const bowlerCharged = deliveryType !== 'bye' && deliveryType !== 'legbye';
+    if (bowlerCharged) {
+      updates.push({ field: 'bowler_runs', value: bowlerRuns + runsToAdd });
+    }
 
     // Free Hit Logic
     const currentFreeHit = matchData.free_hit === 'true';
@@ -178,22 +272,29 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     if (matchData.bowler_name) {
       const bOversFinal = isLegal ? updates.find(u => u.field === 'bowler_overs')?.value : bowlerOversVal;
       history[matchData.bowler_name] = {
-        runs: bowlerRuns + runsToAdd,
+        runs: bowlerRuns + (bowlerCharged ? runsToAdd : 0),
         wickets: bowlerWickets,
         overs: bOversFinal || bowlerOversVal
       };
       updates.push({ field: 'bowlers_history', value: JSON.stringify(history) });
     }
 
-    let newStrikerRuns = strikerRuns + (!isExtra ? runsToAdd : 0);
-    let newStrikerBalls = strikerBalls + (isLegal ? 1 : 0);
+    const actualRunsOffBat = (runsOffBat !== null) ? runsOffBat : (!isExtra ? runsToAdd : 0);
+    let newStrikerRuns = strikerRuns + actualRunsOffBat;
+    let newStrikerBalls = strikerBalls + (isLegal || (deliveryType === 'noball') ? 1 : 0);
     let newNonStrikerRuns = parseInt(matchData.non_striker_runs || '0');
     let newNonStrikerBalls = parseInt(matchData.non_striker_balls || '0');
     let newStrikerName = strikerName;
     let newNonStrikerName = matchData.non_striker_name;
 
     const isOverComplete = isLegal && (balls + 1 >= 6);
-    const isOddRun = (runsToAdd % 2 === 1) && !isExtra;
+    
+    // Swap Logic for international rules
+    let runsForSwap = runsToAdd;
+    if (deliveryType === 'wide' || deliveryType === 'noball') {
+      runsForSwap = Math.max(0, runsToAdd - 1); // Subtract 1 run penalty (Wide/NB)
+    }
+    const isOddRun = (runsForSwap % 2 === 1);
 
     if ((isOddRun && !isOverComplete) || (!isOddRun && isOverComplete)) {
       const currentOnTop = matchData.striker_on_top === 'false' ? false : true;
@@ -213,6 +314,16 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         { field: 'striker_balls', value: newStrikerBalls }
       );
     }
+
+    // Update Batter History
+    const batHistory = JSON.parse(matchData.batters_history || '{}');
+    if (strikerName) {
+      batHistory[strikerName] = { runs: newStrikerRuns, balls: newStrikerBalls, isOut: false };
+    }
+    if (newNonStrikerName) {
+      batHistory[newNonStrikerName] = { runs: newNonStrikerRuns, balls: newNonStrikerBalls, isOut: false };
+    }
+    updates.push({ field: 'batters_history', value: JSON.stringify(batHistory) });
 
     let ballLabel = customLabel;
     if (!ballLabel) {
@@ -237,6 +348,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     const updates = [
       { field: 'wickets', value: wickets + 1 },
       { field: 'bowler_wickets', value: bowlerWickets + 1 },
+      { field: 'partnership_runs', value: 0 },
+      { field: 'partnership_balls', value: 0 },
     ];
 
     let newBalls = balls + 1;
@@ -293,6 +406,24 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       );
     }
 
+    // Trigger Wicket Card
+    updates.push(
+      { field: 'show_wicket_card', value: 'true' },
+      { field: 'last_out_name', value: strikerName },
+      { field: 'last_out_runs', value: strikerRuns },
+      { field: 'last_out_balls', value: strikerBalls },
+      { field: 'last_out_team', value: matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name },
+      { field: 'last_out_logo', value: matchData.batting_team === 'team1' ? matchData.team1_logo : matchData.team2_logo },
+      { field: 'wicket_card_at', value: Date.now().toString() }
+    );
+
+    // Mark batter as OUT in history
+    const batHistory = JSON.parse(matchData.batters_history || '{}');
+    if (strikerName) {
+      batHistory[strikerName] = { runs: strikerRuns, balls: strikerBalls, isOut: true };
+      updates.push({ field: 'batters_history', value: JSON.stringify(batHistory) });
+    }
+
     const ballObj = {
       label: 'W', run: 0, extra: false, wicket: true,
       striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
@@ -311,6 +442,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       { field: 'bowler_runs', value: bowlerRuns + 5 },
       { field: 'striker_runs', value: strikerRuns + 4 },
       { field: 'striker_balls', value: strikerBalls + 1 },
+      { field: 'partnership_runs', value: (parseInt(matchData.partnership_runs || '0') + 5) },
+      { field: 'partnership_balls', value: (parseInt(matchData.partnership_balls || '0') + 1) },
       { field: 'free_hit', value: 'true' }
     ];
     const ballObj = {
@@ -319,6 +452,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     };
     emit('match:recordBall', { updates, ball: ballObj });
   }
+  function handleBye(runs) { addRuns(runs, true, true, `B${runs}`, 'bye'); }
+  function handleLegBye(runs) { addRuns(runs, true, true, `LB${runs}`, 'legbye'); }
   function handleLegBye4() { addRuns(4, true, true, 'LB4', 'legbye'); }
   function handleNoBall6() { 
     const updates = [
@@ -326,6 +461,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       { field: 'bowler_runs', value: bowlerRuns + 7 },
       { field: 'striker_runs', value: strikerRuns + 6 },
       { field: 'striker_balls', value: strikerBalls + 1 },
+      { field: 'partnership_runs', value: (parseInt(matchData.partnership_runs || '0') + 7) },
+      { field: 'partnership_balls', value: (parseInt(matchData.partnership_balls || '0') + 1) },
       { field: 'free_hit', value: 'true' }
     ];
     const ballObj = {
@@ -359,6 +496,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     
     const updates = [];
     updates.push({ field: 'runs', value: runs + totalTeamRuns });
+    updates.push({ field: 'partnership_runs', value: (parseInt(matchData.partnership_runs || '0') + totalTeamRuns) });
+    updates.push({ field: 'partnership_balls', value: (parseInt(matchData.partnership_balls || '0') + (isLegal ? 1 : 0)) });
 
     // Ball counting (legal deliveries only)
     if (isLegal) {
@@ -379,8 +518,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       updates.push({ field: 'bowler_overs', value: `${newBWhole}.${newBBalls}` });
     }
 
-    // Bowler is charged all runs from the delivery
-    const newBowlerRuns = bowlerRuns + totalTeamRuns;
+    // Bowler is charged runs only if delivery type is not bye or legbye
+    const bowlerCharged = deliveryType !== 'bye' && deliveryType !== 'legbye';
+    const newBowlerRuns = bowlerRuns + (bowlerCharged ? totalTeamRuns : 0);
     updates.push({ field: 'bowler_runs', value: newBowlerRuns });
 
     // Update history in real-time
@@ -474,7 +614,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
     const updates = [
       { field: 'wickets', value: wickets + 1 },
-      { field: 'runs', value: runs + totalTeamRuns }
+      { field: 'runs', value: runs + totalTeamRuns },
+      { field: 'partnership_runs', value: 0 },
+      { field: 'partnership_balls', value: 0 }
     ];
 
     let currentBowlerOvers = bowlerOversVal;
@@ -553,7 +695,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       { field: 'non_striker_name', value: finalNSName },
       { field: 'non_striker_runs', value: finalNSRuns },
       { field: 'non_striker_balls', value: finalNSBalls },
-      { field: 'striker_on_top', value: String(finalOnTop) }
+      { field: 'striker_on_top', value: String(finalOnTop) },
+      { field: 'show_wicket_card', value: 'true' },
+      { field: 'last_out_name', value: outName },
+      { field: 'last_out_runs', value: playerOut === 'striker' ? sRuns : nsRuns },
+      { field: 'last_out_balls', value: playerOut === 'striker' ? sBalls : nsBalls },
+      { field: 'last_out_team', value: matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name },
+      { field: 'last_out_logo', value: matchData.batting_team === 'team1' ? matchData.team1_logo : matchData.team2_logo },
+      { field: 'wicket_card_at', value: Date.now().toString() }
     );
 
     const prefixMap = { normal: '', wide: 'Wd', noball: 'NB', bye: 'B', legbye: 'LB' };
@@ -579,6 +728,38 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       timestamp: new Date().toISOString()
     };
     emit('match:recordBall', { updates, ball: ballObj });
+  }
+
+  function handleManualRuns(delta) {
+    emit('match:update', { field: 'runs', value: Math.max(0, runs + delta) });
+  }
+
+  function handleManualWickets(delta) {
+    emit('match:update', { field: 'wickets', value: Math.max(0, Math.min(10, wickets + delta)) });
+  }
+
+  function handleManualBalls(delta) {
+    let newOvers = overs;
+    let newBalls = balls + delta;
+
+    if (newBalls >= 6) {
+      newOvers += 1;
+      newBalls = 0;
+    } else if (newBalls < 0) {
+      if (newOvers > 0) {
+        newOvers -= 1;
+        newBalls = 5;
+      } else {
+        newBalls = 0;
+      }
+    }
+
+    emit('match:updateBulk', {
+      updates: [
+        { field: 'overs', value: newOvers },
+        { field: 'balls', value: newBalls }
+      ]
+    });
   }
 
   // Custom Overthrow from modal
@@ -652,6 +833,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         { field: 'target', value: targetVal },
         { field: 'first_innings_total', value: runs },
         { field: 'first_innings_wickets', value: wickets },
+        { field: 'first_innings_overs', value: overs },
+        { field: 'first_innings_balls', value: balls },
         { field: 'runs', value: 0 },
         { field: 'wickets', value: 0 },
         { field: 'overs', value: 0 },
@@ -762,27 +945,94 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
             </h3>
             <span className="text-slate-400 text-xs">Innings {innings}</span>
           </div>
-          <div className="text-right">
-            <div className="text-white font-display font-black text-4xl">
-              {runs}<span className="text-slate-500 text-2xl">/{wickets}</span>
+          <div className="text-right flex flex-col items-end gap-1">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center bg-slate-900/50 rounded-lg border border-white/10 overflow-hidden">
+                <button 
+                  onClick={() => handleManualRuns(-1)}
+                  className="px-2 py-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors border-r border-white/10"
+                >
+                  <Minus size={14} />
+                </button>
+                <div className="px-4 text-white font-display font-black text-4xl tabular-nums">
+                  {runs}
+                </div>
+                <button 
+                  onClick={() => handleManualRuns(1)}
+                  className="px-2 py-1 hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400 transition-colors border-l border-white/10"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              
+              <div className="flex items-center bg-slate-900/50 rounded-lg border border-white/10 overflow-hidden">
+                <button 
+                  onClick={() => handleManualWickets(-1)}
+                  className="px-1.5 py-0.5 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors border-r border-white/10"
+                >
+                  <Minus size={12} />
+                </button>
+                <div className="px-3 text-slate-500 text-3xl font-black italic tabular-nums">
+                  /{wickets}
+                </div>
+                <button 
+                  onClick={() => handleManualWickets(1)}
+                  className="px-1.5 py-0.5 hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400 transition-colors border-l border-white/10"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
             </div>
-            <span className="text-slate-400 text-sm font-mono">{overs}.{balls} overs</span>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center bg-slate-900/40 rounded-md border border-white/5 overflow-hidden">
+                <button 
+                  onClick={() => handleManualBalls(-1)}
+                  className="px-1.5 py-0.5 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors"
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="px-2 text-slate-400 text-sm font-mono font-bold tracking-tight">
+                  {overs}.{balls} <span className="text-[10px] opacity-50 uppercase ml-1">Overs</span>
+                </span>
+                <button 
+                  onClick={() => handleManualBalls(1)}
+                  className="px-1.5 py-0.5 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Current Players */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-white/5">
           <div className="glass-light rounded-lg p-3 relative overflow-hidden">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Striker</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Striker</span>
+              </div>
+              {matchData.striker_name && (
+                <button 
+                  onClick={() => setChangingStriker(!changingStriker)}
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                  title="Change Player"
+                >
+                  <ArrowLeftRight size={14} />
+                </button>
+              )}
             </div>
-            {!matchData.striker_name ? (
-              <PlayerSelect label="" field="striker_name" players={battingPlayers} />
+            
+            {(!matchData.striker_name || changingStriker) ? (
+              <PlayerSelect label="" field="striker_name" players={battingPlayers} onSelect={() => setChangingStriker(false)} />
             ) : (
               <div className="flex items-center justify-between">
-                 <EditableField label="" field="striker_name" />
-                 <button onClick={() => emit('match:update', {field: 'striker_name', value: ''})} className="text-slate-500 hover:text-white"><RotateCcw size={10}/></button>
+                 <EditableField label="" field="striker_name" prefix={getJersey(matchData.striker_name, battingPlayers)} />
+                 <button onClick={() => emit('match:update', {field: 'striker_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Player">
+                   <RotateCcw size={12}/>
+                 </button>
               </div>
             )}
             <span className="text-white text-sm font-mono font-bold mt-1 block">
@@ -791,16 +1041,30 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           </div>
 
           <div className="glass-light rounded-lg p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Non-Striker</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Non-Striker</span>
+              </div>
+              {matchData.non_striker_name && (
+                <button 
+                  onClick={() => setChangingNonStriker(!changingNonStriker)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                  title="Change Player"
+                >
+                  <ArrowLeftRight size={14} />
+                </button>
+              )}
             </div>
-            {!matchData.non_striker_name ? (
-              <PlayerSelect label="" field="non_striker_name" players={battingPlayers} />
+
+            {(!matchData.non_striker_name || changingNonStriker) ? (
+              <PlayerSelect label="" field="non_striker_name" players={battingPlayers} onSelect={() => setChangingNonStriker(false)} />
             ) : (
               <div className="flex items-center justify-between">
-                <EditableField label="" field="non_striker_name" />
-                <button onClick={() => emit('match:update', {field: 'non_striker_name', value: ''})} className="text-slate-500 hover:text-white"><RotateCcw size={10}/></button>
+                <EditableField label="" field="non_striker_name" prefix={getJersey(matchData.non_striker_name, battingPlayers)} />
+                <button onClick={() => emit('match:update', {field: 'non_striker_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Player">
+                  <RotateCcw size={12}/>
+                </button>
               </div>
             )}
             <span className="text-slate-300 text-sm font-mono mt-1 block">
@@ -809,16 +1073,30 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           </div>
 
           <div className="glass-light rounded-lg p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Bowler</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Bowler</span>
+              </div>
+              {matchData.bowler_name && (
+                <button 
+                  onClick={() => setChangingBowler(!changingBowler)}
+                  className="text-amber-400 hover:text-amber-300 transition-colors"
+                  title="Change Bowler"
+                >
+                  <ArrowLeftRight size={14} />
+                </button>
+              )}
             </div>
-            {!matchData.bowler_name ? (
-              <PlayerSelect label="" field="bowler_name" players={bowlingPlayers} isBowler />
+
+            {(!matchData.bowler_name || changingBowler) ? (
+              <PlayerSelect label="" field="bowler_name" players={bowlingPlayers} isBowler onSelect={() => setChangingBowler(false)} />
             ) : (
               <div className="flex items-center justify-between">
-                <EditableField label="" field="bowler_name" />
-                <button onClick={() => emit('match:update', {field: 'bowler_name', value: ''})} className="text-slate-500 hover:text-white"><RotateCcw size={10}/></button>
+                <EditableField label="" field="bowler_name" prefix={getJersey(matchData.bowler_name, bowlingPlayers)} />
+                <button onClick={() => emit('match:update', {field: 'bowler_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Bowler">
+                  <RotateCcw size={12}/>
+                </button>
               </div>
             )}
             <span className="text-slate-300 text-sm font-mono mt-1 block">
@@ -876,6 +1154,28 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   max="20"
                 />
               </div>
+              <button 
+                onClick={() => emit('match:update', { field: 'show_scoreboard', value: matchData.show_scoreboard === 'false' ? 'true' : 'false' })}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all ${
+                  matchData.show_scoreboard !== 'false' 
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-lg shadow-blue-500/10' 
+                    : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <Eye size={14} className={matchData.show_scoreboard !== 'false' ? 'animate-pulse' : ''} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Scoreboard</span>
+              </button>
+              <button 
+                onClick={() => emit('match:update', { field: 'show_partnership', value: matchData.show_partnership === 'true' ? 'false' : 'true' })}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all ${
+                  matchData.show_partnership === 'true' 
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/10' 
+                    : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <ArrowLeftRight size={14} className={matchData.show_partnership === 'true' ? 'animate-pulse' : ''} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Partnership</span>
+              </button>
             </div>
           </div>
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
@@ -927,6 +1227,24 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         </div>
 
         <div className="mb-3">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Byes & Leg Byes</span>
+          <div className="grid grid-cols-4 gap-2">
+            <button onClick={() => handleBye(1)} className="btn bg-indigo-500/15 text-indigo-300 py-2.5 text-xs font-bold hover:bg-indigo-500/25 border border-indigo-500/10 transition-all">
+              B 1
+            </button>
+            <button onClick={() => handleBye(4)} className="btn bg-indigo-500/20 text-indigo-300 py-2.5 text-xs font-bold hover:bg-indigo-500/30 border border-indigo-500/10 transition-all">
+              B 4
+            </button>
+            <button onClick={() => handleLegBye(1)} className="btn bg-orange-500/15 text-orange-300 py-2.5 text-xs font-bold hover:bg-orange-500/25 border border-orange-500/10 transition-all">
+              LB 1
+            </button>
+            <button onClick={() => handleLegBye(4)} className="btn bg-orange-500/20 text-orange-300 py-2.5 text-xs font-bold hover:bg-orange-500/30 border border-orange-500/10 transition-all">
+              LB 4
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-3">
           <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Extras + Overthrow</span>
           <div className="grid grid-cols-4 gap-2">
             <button onClick={handleByeOT} className="btn bg-teal-500/15 text-teal-300 py-2.5 text-xs font-bold hover:bg-teal-500/25 border border-teal-500/10 transition-all">
@@ -943,17 +1261,22 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
             </button>
           </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <button onClick={handlePenalty} className="btn bg-red-500/15 text-red-300 py-2.5 text-[11px] font-bold hover:bg-red-500/25 border border-red-500/10 transition-all flex items-center justify-center gap-1">
-            <AlertTriangle size={12} /> Penalty +5
-          </button>
-          <button onClick={() => setShowOTModal(true)} className="btn bg-cyan-500/15 text-cyan-300 py-2.5 text-[11px] font-bold hover:bg-cyan-500/25 border border-cyan-500/10 transition-all flex items-center justify-center gap-1">
-            <Settings size={12} /> Custom OT
-          </button>
-          <button onClick={() => setShowRunOutModal(true)} className="btn bg-pink-500/15 text-pink-300 py-2.5 text-[11px] font-bold hover:bg-pink-500/25 border border-pink-500/10 transition-all flex items-center justify-center gap-1">
-            <AlertTriangle size={12} /> Run Out
-          </button>
+        <div className="mb-3">
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Custom Extras</span>
+          <div className="grid grid-cols-4 gap-2">
+            <button onClick={() => { setCustomExtraConfig({ type: 'wide', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-purple-500/15 text-purple-300 py-2.5 text-[10px] font-bold hover:bg-purple-500/25 border border-purple-500/10 transition-all flex items-center justify-center gap-1">
+              <Plus size={12} /> Custom Wide
+            </button>
+            <button onClick={() => { setCustomExtraConfig({ type: 'noball', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-pink-500/15 text-pink-300 py-2.5 text-[10px] font-bold hover:bg-pink-500/25 border border-pink-500/10 transition-all flex items-center justify-center gap-1">
+              <Plus size={12} /> Custom NB
+            </button>
+            <button onClick={() => { setCustomExtraConfig({ type: 'bye', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-indigo-500/15 text-indigo-300 py-2.5 text-[10px] font-bold hover:bg-indigo-500/25 border border-indigo-500/10 transition-all flex items-center justify-center gap-1">
+              <Plus size={12} /> Custom Bye
+            </button>
+            <button onClick={() => { setCustomExtraConfig({ type: 'legbye', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-orange-500/15 text-orange-300 py-2.5 text-[10px] font-bold hover:bg-orange-500/25 border border-orange-500/10 transition-all flex items-center justify-center gap-1">
+              <Plus size={12} /> Custom LB
+            </button>
+          </div>
         </div>
 
         {/* Free Hit Toggle */}
@@ -1254,6 +1577,122 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         </div>
       )}
 
+      {/* Custom Extra Modal (Unified for Wide, NB, Bye, LB) */}
+      {showCustomExtraModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCustomExtraModal(false)}>
+          <div className="bg-sec w-full max-w-sm rounded-2xl p-6 border border-main shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6 border-b border-main pb-4">
+              <h3 className="text-xl font-display font-black text-main flex items-center gap-2">
+                <Plus className="text-indigo-500" />
+                Custom Extra
+              </h3>
+              <button onClick={() => setShowCustomExtraModal(false)} className="text-slate-500 hover:text-main transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Type Selection */}
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Extra Type</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { id: 'wide', label: 'Wide', color: 'purple' },
+                    { id: 'noball', label: 'NB', color: 'pink' },
+                    { id: 'bye', label: 'Bye', color: 'indigo' },
+                    { id: 'legbye', label: 'LB', color: 'orange' }
+                  ].map(t => (
+                    <button key={t.id} onClick={() => setCustomExtraConfig(c => ({ ...c, type: t.id }))}
+                      className={`py-2 rounded-lg text-[10px] font-bold border transition-all ${
+                        customExtraConfig.type === t.id 
+                          ? `bg-${t.color}-500/20 text-${t.color}-400 border-${t.color}-500` 
+                          : 'bg-white/5 text-slate-400 border-white/5'
+                      }`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* No Ball Specific Option */}
+              {customExtraConfig.type === 'noball' && (
+                <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
+                  <span className="text-xs text-slate-300">Runs off the bat?</span>
+                  <button 
+                    onClick={() => setCustomExtraConfig(c => ({ ...c, isOffBat: !c.isOffBat }))}
+                    className={`px-3 py-1 rounded text-[10px] font-bold border transition-all ${
+                      customExtraConfig.isOffBat ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500' : 'bg-white/5 text-slate-500 border-white/5'
+                    }`}>
+                    {customExtraConfig.isOffBat ? 'YES' : 'NO'}
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-3">
+                  {customExtraConfig.type === 'wide' || customExtraConfig.type === 'noball' ? 'Additional Runs (excluding penalty)' : 'Runs'}
+                </label>
+                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                  <button onClick={() => setCustomExtraConfig(c => ({ ...c, runs: Math.max(0, c.runs - 1) }))}
+                    className="w-10 h-10 rounded-lg bg-white/5 text-main flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                    <Minus size={16} />
+                  </button>
+                  <span className="text-main text-2xl font-display font-black w-12 text-center">{customExtraConfig.runs}</span>
+                  <button onClick={() => setCustomExtraConfig(c => ({ ...c, runs: c.runs + 1 }))}
+                    className="w-10 h-10 rounded-lg bg-white/5 text-main flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                    <Plus size={16} />
+                  </button>
+                  <div className="flex flex-wrap gap-1.5 ml-auto justify-end max-w-[120px]">
+                    {[0, 1, 2, 3, 4, 6].map(n => (
+                      <button key={n} onClick={() => setCustomExtraConfig(c => ({ ...c, runs: n }))}
+                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${
+                          customExtraConfig.runs === n ? 'bg-indigo-500/30 text-indigo-500 border border-indigo-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                        }`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-8">
+              <button onClick={() => setShowCustomExtraModal(false)}
+                className="btn bg-white/5 text-slate-400 py-3 text-sm font-bold border border-white/5 hover:bg-white/10 transition-all">
+                Cancel
+              </button>
+              <button onClick={() => { 
+                const { type, runs, isOffBat } = customExtraConfig;
+                let totalRuns = runs;
+                let label = '';
+                let isLegal = false;
+                let isExtra = true;
+                let offBatRuns = null;
+
+                if (type === 'wide') {
+                  totalRuns = runs + 1;
+                  label = runs === 0 ? 'Wd' : `Wd${runs+1}`;
+                } else if (type === 'noball') {
+                  totalRuns = runs + 1;
+                  label = runs === 0 ? 'NB' : `NB${runs}`; // Simplified label
+                  if (isOffBat) offBatRuns = runs;
+                } else {
+                  // Bye or Leg Bye
+                  isLegal = true;
+                  label = `${type === 'bye' ? 'B' : 'LB'}${runs}`;
+                }
+
+                addRuns(totalRuns, isLegal, isExtra, label, type, offBatRuns); 
+                setShowCustomExtraModal(false); 
+              }}
+                className="btn bg-gradient-to-r from-indigo-500 to-violet-500 text-white py-3 text-sm font-bold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/20">
+                Add Extra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Match Controls */}
       <div className="glass rounded-xl p-5 border border-main">
         <h4 className="text-main font-semibold text-sm mb-3">Match Controls</h4>
@@ -1267,6 +1706,81 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         </div>
         <div className="mt-3">
           <EditableField label="Match Status" field="match_status" wide />
+        </div>
+      </div>
+
+      {/* Live Batting Stats */}
+      <div className="glass rounded-xl p-5 border border-main">
+        <h4 className="text-main font-semibold text-sm mb-4 flex items-center gap-2">
+          <Users size={16} className="text-emerald-400" />
+          Live Batting Stats (Innings {innings})
+        </h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-main">
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider">Batsman</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">R</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">B</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">SR</th>
+                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-main">
+              {(() => {
+                const history = JSON.parse(matchData.batters_history || '{}');
+                
+                // Combine history with current active batters
+                const allBatters = { ...history };
+                if (matchData.striker_name) {
+                  allBatters[matchData.striker_name] = {
+                    runs: parseInt(matchData.striker_runs || '0'),
+                    balls: parseInt(matchData.striker_balls || '0'),
+                    isOut: false
+                  };
+                }
+                if (matchData.non_striker_name) {
+                  allBatters[matchData.non_striker_name] = {
+                    runs: parseInt(matchData.non_striker_runs || '0'),
+                    balls: parseInt(matchData.non_striker_balls || '0'),
+                    isOut: false
+                  };
+                }
+
+                const entries = Object.entries(allBatters);
+                if (entries.length === 0) {
+                  return <tr><td colSpan="5" className="py-4 text-center text-slate-500 italic">No batting data yet.</td></tr>;
+                }
+
+                return entries.map(([name, stats]) => {
+                  const sr = stats.balls > 0 ? ((stats.runs / stats.balls) * 100).toFixed(1) : '0.0';
+                  const isStriker = name === matchData.striker_name;
+                  const isNonStriker = name === matchData.non_striker_name;
+                  const isActive = isStriker || isNonStriker;
+
+                  return (
+                    <tr key={name} className={`${isActive ? 'bg-emerald-500/5' : ''}`}>
+                      <td className="py-2.5 font-bold text-main flex items-center gap-2">
+                        {name}
+                        {isStriker && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Striker" />}
+                        {isNonStriker && <div className="w-1 h-1 rounded-full bg-slate-500" title="Non-Striker" />}
+                      </td>
+                      <td className="py-2.5 text-center font-mono text-main">{stats.runs}</td>
+                      <td className="py-2.5 text-center font-mono text-main">{stats.balls}</td>
+                      <td className="py-2.5 text-center font-mono text-slate-500">{sr}</td>
+                      <td className="py-2.5 text-center">
+                        {stats.isOut ? (
+                          <span className="text-red-400/80 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] font-bold">OUT</span>
+                        ) : (
+                          <span className="text-emerald-400/80 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold">NOT OUT</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
         </div>
       </div>
 

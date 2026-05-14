@@ -45,3 +45,25 @@ for that i need more buttons in the match control page.
 
 according your thought how many more buttons i need to add? and what should be their names?
 add thouse necessary buttons in the match control page.
+
+change some style in the style name HMH-CS
+All the viewable part of OBS overly are aligned at the lift, you have to modify them, the short name of the betting teams will align at the lift, the short name of the bowling team will align at the right, and the main scoring board runs and wickets have will align at the middle of the scoreboard.
+
+In math control pages the need a option to choose PowerPlay between P1, P2 and P3
+
+When the score of bowler is showing there are some missmatch happening, not counting the bollars run given and wicket taken score properly in the database where the live data is recording for the running mach. They are also creates a data line for a specific named bowler that means for all the bowlers, you have to create a separate line data with their bowling performance, if a bowler done over then bowler changed after that the same other bowler come after two or three over the performance section of bowler will start counting before the result of his csore was left 
+That means if a bowler do three over in a innings decor of the roller will be recorded into the live learning data base, as a result when the match ended total run given by the bowler and total wicket taken by the bowler can be easily calculable
+
+Need a run out button for giving run out, if I click run out button, then then need another option which player out the striker or non-striker anyone can be out. So give me a better solution to fix this and give me the proper instruction of your solution and what is your approach to fix this?
+
+╔══════════════════════════════════════════════════╗
+║     🏏 Cricket Scoreboard for OBS                ║
+╠══════════════════════════════════════════════════╣
+║  Local:    http://localhost:3000                ║
+║  Network:  http://169.254.188.232:3000           ║
+╠══════════════════════════════════════════════════╣
+║  Overlay:  http://localhost:3000/overlay       ║
+║  Admin:    http://localhost:3000/admin         ║
+╚══════════════════════════════════════════════════╝
+Network:  http://169.254.188.232:3000
+here the local network IP address is not matching of my device local IP address

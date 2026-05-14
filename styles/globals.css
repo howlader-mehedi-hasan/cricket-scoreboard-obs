@@ -13,6 +13,21 @@
   .bg-sec { background-color: var(--bg-secondary) !important; }
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
 :root {
   --admin-bg: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
   --bg-card: rgba(15, 23, 42, 0.75);
@@ -45,25 +60,56 @@
 
 /* Force override for light mode readability */
 .light-theme .text-white, 
+.light-theme .text-slate-50,
 .light-theme .text-slate-100, 
 .light-theme .text-slate-200, 
 .light-theme .text-slate-300 {
-  color: var(--text-main) !important;
+  color: #000000 !important;
 }
 
 .light-theme .text-slate-400, 
-.light-theme .text-slate-500 {
-  color: var(--text-muted) !important;
+.light-theme .text-slate-500,
+.light-theme .text-slate-600 {
+  color: #1e293b !important; /* Very dark slate */
+}
+
+/* Handle colored tip text and delivery types */
+.light-theme .text-cyan-200\/50,
+.light-theme .text-cyan-300,
+.light-theme .text-amber-200\/60,
+.light-theme .text-amber-300,
+.light-theme .text-amber-400,
+.light-theme .text-emerald-300,
+.light-theme .text-emerald-400,
+.light-theme .text-purple-300,
+.light-theme .text-pink-300,
+.light-theme .text-orange-300 {
+  color: #0f172a !important; /* Dark blue/black for visibility */
+}
+
+/* Force all buttons to have black text and borders in light mode */
+.light-theme button,
+.light-theme button span,
+.light-theme button div,
+.light-theme button svg {
+  color: #000000 !important;
+}
+
+.light-theme button {
+  border: 1px solid #000000 !important;
 }
 
 .light-theme .bg-white\/5,
-.light-theme .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.05) !important;
+.light-theme .bg-white\/10,
+.light-theme .bg-slate-800\/50,
+.light-theme .bg-sec {
+  background-color: #f1f5f9 !important;
 }
 
 .light-theme .border-white\/5,
-.light-theme .border-white\/10 {
-  border-color: rgba(0, 0, 0, 0.1) !important;
+.light-theme .border-white\/10,
+.light-theme .border-main {
+  border-color: #cbd5e1 !important;
 }
 
 /* ── Global Reset ── */

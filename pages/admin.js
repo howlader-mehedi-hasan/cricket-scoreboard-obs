@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { useSocket } from '@/lib/socket';
 import MatchControl from '@/components/admin/MatchControl';
@@ -21,17 +21,19 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('match');
   const [teams, setTeams] = useState([]);
   const [isLightMode, setIsLightMode] = useState(false);
+  const [showMirror, setShowMirror] = useState(true);
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      const res = await fetch('/api/teams');
+      const data = await res.json();
+      setTeams(data);
+    } catch (err) {
+      console.error('Failed to fetch teams in admin:', err);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        const res = await fetch('/api/teams');
-        const data = await res.json();
-        setTeams(data);
-      } catch (err) {
-        console.error('Failed to fetch teams in admin:', err);
-      }
-    };
     fetchTeams();
   }, []);
 
@@ -60,7 +62,19 @@ export default function Admin() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {/* Mirror Toggle */}
+              <button 
+                onClick={() => setShowMirror(!showMirror)}
+                className={`p-2 rounded-lg border transition-all shadow-lg flex items-center gap-2 px-3 ${
+                  showMirror ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/5 border-white/10 text-slate-400'
+                }`}
+                title="Toggle Broadcast Preview"
+              >
+                <Radio size={16} className={showMirror ? 'animate-pulse' : ''} />
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Mirror View</span>
+              </button>
+
               {/* Theme Toggle */}
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
@@ -78,6 +92,25 @@ export default function Admin() {
               </div>
             </div>
           </div>
+
+          {/* Mirror View Container */}
+          {showMirror && (
+            <div className="max-w-4xl mx-auto px-4 pb-4">
+              <div className="relative w-full h-[180px] bg-black/20 rounded-2xl border-2 border-white/10 overflow-x-auto overflow-y-hidden shadow-2xl group transition-all custom-scrollbar">
+                <div className="absolute top-2 left-3 z-10 bg-black/60 backdrop-blur-md px-3 py-0.5 rounded-full text-[9px] font-black text-emerald-400 border border-emerald-500/20 flex items-center gap-2 uppercase tracking-widest sticky left-3">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                   Live Mirror (Scroll to see all)
+                </div>
+                
+                <div className="h-full flex items-center px-4" style={{ minWidth: '1400px' }}>
+                  <iframe 
+                    src={`/overlay?hostId=${hostId}&preview=true`}
+                    className="w-full h-full border-none pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="max-w-4xl mx-auto px-4 flex gap-0">
@@ -99,7 +132,7 @@ export default function Admin() {
 
         {/* Content */}
         <main className="max-w-4xl mx-auto px-4 py-6">
-          {activeTab === 'setup' && <TeamSetup emit={emit} matchData={matchData} />}
+          {activeTab === 'setup' && <TeamSetup emit={emit} matchData={matchData} teams={teams} onTeamsUpdate={fetchTeams} />}
           {activeTab === 'match' && <MatchControl matchData={matchData} emit={emit} teams={teams} />}
           {activeTab === 'history' && <MatchHistory />}
           {activeTab === 'style' && <StyleControl styleData={styleData} emit={emit} hostId={hostId} />}

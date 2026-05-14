@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Shield, Gamepad2 } from 'lucide-react';
 
-export default function TeamSetup({ emit, matchData }) {
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function TeamSetup({ emit, matchData, teams = [], onTeamsUpdate }) {
+  const [loading, setLoading] = useState(false);
 
   // Form states
   const [newTeam, setNewTeam] = useState({ fullName: '', shortName: '', department: '', logo: '' });
@@ -21,10 +20,6 @@ export default function TeamSetup({ emit, matchData }) {
   const [editingTeamId, setEditingTeamId] = useState(null);
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
-
-  useEffect(() => {
     if (matchData) {
       if (matchData.team1_id) setMatchTeam1(matchData.team1_id);
       if (matchData.team2_id) setMatchTeam2(matchData.team2_id);
@@ -40,15 +35,8 @@ export default function TeamSetup({ emit, matchData }) {
     }
   }, [matchData, teams]);
 
-  const fetchTeams = async () => {
-    try {
-      const res = await fetch('/api/teams');
-      const data = await res.json();
-      setTeams(data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Failed to fetch teams:', err);
-    }
+  const fetchTeams = () => {
+    if (onTeamsUpdate) onTeamsUpdate();
   };
 
   const handleLogoUpload = async (e) => {

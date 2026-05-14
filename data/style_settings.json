@@ -5,13 +5,15 @@
   "theme": "dark",
   "layout_type": "hmh-cs",
   "active_profile": "default style",
-  "score_panel_bg": "#57cde5",
+  "score_panel_bg": "#07c7ed",
   "x_offset": "50",
   "y_offset": "86",
   "profile_x": "12",
   "profile_y": "28",
   "msg_panel_width": "62",
   "msg_panel_height": "72",
-  "msg_panel_scale": "65",
-  "msg_panel_radius": "92"
+  "msg_panel_scale": "50",
+  "msg_panel_radius": "77",
+  "overlay_scale": "97",
+  "text_scale": "100"
 }

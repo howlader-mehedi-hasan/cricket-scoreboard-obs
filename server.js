@@ -226,14 +226,20 @@ nextApp.prepare().then(() => {
   server.listen(port, hostname, () => {
     const nets = os.networkInterfaces();
     let lanIP = 'localhost';
-    for (const name of Object.keys(nets)) {
-      for (const net of nets[name]) {
+    
+    // Find the best LAN IP
+    const addresses = [];
+    Object.keys(nets).forEach((name) => {
+      nets[name].forEach((net) => {
         if (net.family === 'IPv4' && !net.internal) {
-          lanIP = net.address;
-          break;
+          addresses.push(net.address);
         }
-      }
-    }
+      });
+    });
+
+    // Prefer 192.168.x.x or 10.x.x.x over others
+    const bestIP = addresses.find(ip => ip.startsWith('192.168.') || ip.startsWith('10.')) || addresses[0] || 'localhost';
+    lanIP = bestIP;
 
     console.log('\n╔══════════════════════════════════════════════════╗');
     console.log('║     🏏 Cricket Scoreboard for OBS                ║');
@@ -241,8 +247,8 @@ nextApp.prepare().then(() => {
     console.log(`║  Local:    http://localhost:${port}                ║`);
     console.log(`║  Network:  http://${lanIP}:${port}           ║`);
     console.log('╠══════════════════════════════════════════════════╣');
-    console.log(`║  Overlay:  http://localhost:${port}/overlay       ║`);
-    console.log(`║  Admin:    http://localhost:${port}/admin         ║`);
+    console.log(`║  Overlay:  http://${lanIP}:${port}/overlay       ║`);
+    console.log(`║  Admin:    http://${lanIP}:${port}/admin         ║`);
     console.log('╚══════════════════════════════════════════════════╝\n');
   });
 });
