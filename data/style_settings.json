@@ -15,5 +15,7 @@
   "msg_panel_scale": "50",
   "msg_panel_radius": "77",
   "overlay_scale": "97",
-  "text_scale": "100"
+  "text_scale": "119",
+  "clock_theme": "light",
+  "target_bar_theme": "light"
 }

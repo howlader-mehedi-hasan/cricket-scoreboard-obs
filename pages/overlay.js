@@ -303,7 +303,7 @@ const LayoutHMHCS = ({
   const bowlerWickets = matchData.bowler_wickets || '0';
   const bowlerRuns = matchData.bowler_runs || '0';
 
-  const runsNeeded = Math.max(0, target - runs);
+  const runsNeeded = Math.max(0, target - parseInt(runs));
   const ballsRemaining = Math.max(0, (parseInt(matchData.total_overs || 20) * 6) - totalBalls);
   const rrr = ballsRemaining > 0 ? ((runsNeeded / ballsRemaining) * 6).toFixed(2) : '0.00';
 
@@ -389,15 +389,6 @@ const LayoutHMHCS = ({
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.1' }}>
                   <span style={{ color: '#555', fontSize: fs(9), fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>RRR</span>
                   <span style={{ color: '#dc2626', fontWeight: 900, fontSize: fs(13) }}>{rrr}</span>
-                </div>
-                <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: '1', minWidth: '85px' }}>
-                  <div style={{ color: '#1e293b', fontWeight: 900, fontSize: fs(10), textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Need <span style={{ color: primaryColor }}>{runsNeeded}</span> Runs
-                  </div>
-                  <div style={{ color: '#64748b', fontWeight: 700, fontSize: fs(8), textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    In <span style={{ color: '#334155' }}>{ballsRemaining}</span> Balls
-                  </div>
                 </div>
               </>
             )}
@@ -885,6 +876,12 @@ export default function Overlay() {
   const isInningsBreak = matchData.is_innings_break === 'true';
   const isPreMatch = matchData.is_pre_match === 'true';
 
+  const textScale = parseFloat(styleData.text_scale || '100') / 100;
+  const fs = (size) => `${Math.round(size * textScale)}px`;
+
+  const runsNeeded = Math.max(0, target - parseInt(runs));
+  const ballsRemaining = Math.max(0, (parseInt(matchData.total_overs || 20) * 6) - totalBalls);
+
   const t1Data = teams.find(t => t.id === matchData?.team1_id);
   const t2Data = teams.find(t => t.id === matchData?.team2_id);
   const team1Logo = t1Data?.logo || matchData?.team1_logo;
@@ -968,8 +965,15 @@ export default function Overlay() {
     <>
       <Head><title>Cricket Scoreboard Overlay</title></Head>
       {/* Live Header */}
-      <div className="fixed top-4 right-6 z-[9999] bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
-        <RealTimeClock className="text-white" fontSize={parseInt(styleData.clock_font_size || '18')} />
+      <div className={`fixed top-4 right-6 z-[9999] backdrop-blur-md px-4 py-2 rounded-xl border transition-all duration-500 shadow-2xl ${
+        styleData.clock_theme === 'light' 
+          ? 'bg-white/80 border-slate-200' 
+          : 'bg-black/60 border-white/10'
+      }`}>
+        <RealTimeClock 
+          theme={styleData.clock_theme || 'dark'} 
+          fontSize={parseInt(styleData.clock_font_size || '18')} 
+        />
       </div>
 
         <AnimatePresence>
@@ -1245,6 +1249,40 @@ export default function Overlay() {
                   layoutType === 'diamond' ? <LayoutDiamond {...layoutProps} /> : 
                   layoutType === 't-sports' ? <LayoutTSports {...layoutProps} /> : 
                   <LayoutDefault {...layoutProps} />}
+
+                {/* ── New Target Message Bar (Middle Line) ── */}
+                {innings > 1 && !isMatchEnded && !isInningsBreak && !isPreMatch && (
+                  <div className="flex justify-center w-full">
+                    <motion.div 
+                      initial={{ y: -10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      style={{
+                        background: styleData.target_bar_theme === 'light' ? 'rgba(255, 255, 255, 0.98)' : 'rgba(15, 23, 42, 0.95)',
+                        backdropFilter: 'blur(12px)',
+                        marginTop: '4px',
+                        padding: '4px 40px',
+                        borderRadius: '0 0 12px 12px',
+                        border: styleData.target_bar_theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)',
+                        borderTop: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        color: styleData.target_bar_theme === 'light' ? '#334155' : '#cbd5e1',
+                        fontSize: fs(12),
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1.5px',
+                        boxShadow: styleData.target_bar_theme === 'light' ? '0 10px 25px rgba(0,0,0,0.08)' : '0 10px 30px rgba(0,0,0,0.4)',
+                        minWidth: '400px'
+                      }}
+                    >
+                      NEED <span style={{ color: primaryColor, fontSize: fs(24), fontWeight: 900, fontStyle: 'italic' }}>{runsNeeded}</span> RUNS 
+                      <div style={{ width: '1px', height: '16px', background: styleData.target_bar_theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }} />
+                      FROM <span style={{ color: '#facc15', fontSize: fs(24), fontWeight: 900, fontStyle: 'italic' }}>{ballsRemaining}</span> BALLS
+                    </motion.div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

@@ -14,6 +14,7 @@ export default function StyleControl({ styleData, emit, hostId }) {
     msg_panel_scale: '100', msg_panel_radius: '0',
     overlay_scale: '100',
     text_scale: '100',
+    target_bar_theme: 'dark',
     profiles: []
   });
   const [newProfileName, setNewProfileName] = useState('');
@@ -247,6 +248,43 @@ export default function StyleControl({ styleData, emit, hostId }) {
         <div className="mt-8 space-y-5">
           <Slider label="Background Opacity" field="bg_opacity" min={0} max={1} step={0.05} />
           <Slider label="Clock Font Size" field="clock_font_size" min={10} max={80} step={1} />
+          
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <label className="text-slate-300 text-xs uppercase tracking-widest font-bold">Clock Theme</label>
+            <div className="flex bg-black/20 rounded-lg p-1 border border-white/5">
+              <button 
+                onClick={() => upd('clock_theme', 'dark')}
+                className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${ls.clock_theme !== 'light' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                DARK
+              </button>
+              <button 
+                onClick={() => upd('clock_theme', 'light')}
+                className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${ls.clock_theme === 'light' ? 'bg-white text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                LIGHT
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <label className="text-slate-300 text-xs uppercase tracking-widest font-bold">Target Bar Theme</label>
+            <div className="flex bg-black/20 rounded-lg p-1 border border-white/5">
+              <button 
+                onClick={() => upd('target_bar_theme', 'dark')}
+                className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${ls.target_bar_theme !== 'light' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                DARK
+              </button>
+              <button 
+                onClick={() => upd('target_bar_theme', 'light')}
+                className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${ls.target_bar_theme === 'light' ? 'bg-white text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                LIGHT
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
             <label className="text-slate-300 text-xs uppercase tracking-widest font-bold">Ball Timeline</label>
             <button onClick={() => upd('show_timeline', ls.show_timeline === '1' ? '0' : '1')}

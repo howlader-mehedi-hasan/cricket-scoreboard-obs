@@ -202,13 +202,33 @@
         "id": "3efcfd88-38db-473b-8480-20f34c7dad84",
         "name": "Sk. Sabbir",
         "jersey": "90"
+      },
+      {
+        "id": "69e14b9a-bf1e-427e-9d9e-ded3d6f3ce16",
+        "name": "Siam",
+        "jersey": "12"
+      },
+      {
+        "id": "03f28b1e-777f-4b8d-bb9f-78b4bdb48f5c",
+        "name": "Masba",
+        "jersey": "31"
+      },
+      {
+        "id": "7ecf817a-14ab-4f73-9e96-b3f1e7dafba2",
+        "name": "Imtiaz",
+        "jersey": "77"
+      },
+      {
+        "id": "f02eeca4-b81b-4773-a66e-5dd991c3dc37",
+        "name": "Sabbir",
+        "jersey": "17"
       }
     ],
     "logo": "/uploads/bg_1778619254483.jpg"
   },
   {
     "id": "d5763603-9082-493f-8d36-716101748903",
-    "fullName": "English LL",
+    "fullName": "English Elegma",
     "shortName": "ELL",
     "department": "English language and literature",
     "players": [
@@ -412,5 +432,186 @@
       }
     ],
     "logo": "/uploads/bg_1778619516353.png"
+  },
+  {
+    "id": "b26ec579-225a-4baf-a495-03d56c303dfe",
+    "fullName": "Team blue",
+    "shortName": "BLUE",
+    "department": "",
+    "logo": "",
+    "players": [
+      {
+        "id": "cb7e7420-b8dc-4c3e-b0a5-1b475091b7b9",
+        "name": "sagar",
+        "jersey": "18"
+      },
+      {
+        "id": "b0e3b03f-98c4-4d31-86d9-dfc896202ee9",
+        "name": "tasin",
+        "jersey": "51"
+      },
+      {
+        "id": "3274d852-91a9-4fdf-bcd9-46251082155d",
+        "name": "asad",
+        "jersey": "7"
+      },
+      {
+        "id": "ada0576e-01ac-459c-a4ea-f5cc3d3ca7b2",
+        "name": "sumon",
+        "jersey": "34"
+      },
+      {
+        "id": "4ef7849e-f58c-48ff-987b-dba8d4bf93af",
+        "name": "mahedi",
+        "jersey": "15"
+      },
+      {
+        "id": "3613ecc9-7bf9-41a5-8ffa-ea02b54cc54a",
+        "name": "tanbir",
+        "jersey": "0"
+      },
+      {
+        "id": "d8016d76-18f8-4882-8920-3f9ed6ce51ca",
+        "name": "shamin",
+        "jersey": "10"
+      },
+      {
+        "id": "8b68b042-5eac-443c-9b42-a3dce4a92864",
+        "name": "shahidul",
+        "jersey": "18"
+      },
+      {
+        "id": "cd31b0ea-5020-47c1-9e83-aa333e10c23b",
+        "name": "kollol",
+        "jersey": "08"
+      },
+      {
+        "id": "4027bab3-ab14-4ebc-aec6-7f078f4362ad",
+        "name": "Naim",
+        "jersey": "0"
+      },
+      {
+        "id": "5aa85860-aa5c-4a74-8e85-d1b331e331eb",
+        "name": "milon",
+        "jersey": "0"
+      },
+      {
+        "id": "cf5c13a6-b2ec-43ca-be6d-7e50bf63a022",
+        "name": "injaman",
+        "jersey": "0"
+      },
+      {
+        "id": "e8c50ac8-f3a6-4b87-976b-773dd605a1d3",
+        "name": "anik",
+        "jersey": "0"
+      }
+    ]
+  },
+  {
+    "id": "10a53d5b-893e-443b-9bda-38aaa0f5034e",
+    "fullName": "Team Red",
+    "shortName": "RED",
+    "department": "",
+    "logo": "",
+    "players": [
+      {
+        "id": "0fdbe1bb-268d-4af4-9ff0-0224db8c4f97",
+        "name": "aroj",
+        "jersey": "04"
+      },
+      {
+        "id": "e221a8c4-aaa3-4546-8707-3a7712338d43",
+        "name": "shakil",
+        "jersey": "75"
+      },
+      {
+        "id": "e2a265bc-c253-4f0d-b2dc-7c46572403c9",
+        "name": "Apurbo",
+        "jersey": "0"
+      },
+      {
+        "id": "472187cf-a602-4462-8928-4aceae610c9d",
+        "name": "istyaque",
+        "jersey": "40"
+      },
+      {
+        "id": "f1ad2795-c17f-4078-886b-70ebc4576887",
+        "name": "Tajul",
+        "jersey": "03"
+      },
+      {
+        "id": "1538899f-254c-4b79-a37d-ac961d9f685b",
+        "name": "EH",
+        "jersey": "10"
+      },
+      {
+        "id": "b7e3eb19-c0f3-4e8a-88b6-6d4ee2eb7bf4",
+        "name": "Sohel",
+        "jersey": "01"
+      },
+      {
+        "id": "fb60e251-f235-440f-96c1-dce66e1aab92",
+        "name": "MHN",
+        "jersey": "10"
+      },
+      {
+        "id": "1347997d-1d8f-4a20-a026-59a81f55a16e",
+        "name": "Mahfuz",
+        "jersey": "14"
+      },
+      {
+        "id": "28cb62f8-cad2-4f7f-9560-13f97f9c9975",
+        "name": "swapnil",
+        "jersey": "05"
+      },
+      {
+        "id": "c675838e-50e2-4d4d-b204-c44dd104cb2a",
+        "name": "MHS",
+        "jersey": "00"
+      },
+      {
+        "id": "578fef47-2779-4f87-9aa3-2d4ff1fc477a",
+        "name": "Arif",
+        "jersey": "03"
+      },
+      {
+        "id": "a06b1ec0-f46c-4b23-824a-634ef6808174",
+        "name": "Mehedi",
+        "jersey": "02"
+      },
+      {
+        "id": "b4c43659-aab1-4427-bd5a-d81c5df660b6",
+        "name": "mehedi",
+        "jersey": "15"
+      }
+    ]
+  },
+  {
+    "id": "b7db578d-92ef-43a1-8957-9b484ea5b294",
+    "fullName": "blue",
+    "shortName": "BLUE",
+    "department": "",
+    "logo": "",
+    "players": [
+      {
+        "id": "1b918fa3-8b2e-489c-82ce-9eb20e9d3c07",
+        "name": "no",
+        "jersey": "1"
+      }
+    ]
+  },
+  {
+    "id": "e498692b-e7c6-4a2d-9d27-20627712f4a8",
+    "fullName": "green",
+    "shortName": "G-White",
+    "department": "",
+    "logo": "",
+    "players": [
+      {
+        "id": "3fdada7b-8464-47ab-8c80-82a471067fa0",
+        "name": "no",
+        "jersey": "1"
+      }
+    ]
   }
 ]
