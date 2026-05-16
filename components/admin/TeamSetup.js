@@ -210,212 +210,305 @@ export default function TeamSetup({ emit, matchData, teams = [], onTeamsUpdate }
     alert('Toss information updated!');
   };
 
-  if (loading) return <div className="p-4 text-white">Loading...</div>;
-  if (loading) return <div className="p-4 text-main">Loading...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="w-12 h-12 border-4 border-accent-primary/20 border-t-accent-primary rounded-full animate-spin" />
+      <p className="text-slate-500 font-black text-xs uppercase tracking-widest animate-pulse">Syncing Team Data...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Create/Edit Team Form */}
-        <div className="glass rounded-xl p-5 border border-main">
-          <h3 className="text-main font-bold mb-4 flex items-center gap-2">
-            <Shield size={18} className="text-emerald-400" />
-            {editingTeamId ? 'Edit Team' : 'Create New Team'}
-          </h3>
-          <form onSubmit={handleCreateOrUpdateTeam} className="space-y-3">
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Full Name</label>
-              <input type="text" value={newTeam.fullName} onChange={e => setNewTeam({ ...newTeam, fullName: e.target.value })} required className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-emerald-500" placeholder="e.g. Royal Challengers" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Short Name</label>
-                <input type="text" value={newTeam.shortName} onChange={e => setNewTeam({ ...newTeam, shortName: e.target.value })} required className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-emerald-500" placeholder="e.g. RCB" />
+        <div className="glass rounded-2xl p-6 border-t-4 border-accent-primary relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+             <Shield size={80} className="text-accent-primary" />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-accent-primary/10 flex items-center justify-center text-accent-primary border border-accent-primary/20">
+                <Shield size={20} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Department</label>
-                <input type="text" value={newTeam.department} onChange={e => setNewTeam({ ...newTeam, department: e.target.value })} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-emerald-500" placeholder="Optional" />
+                <h3 className="text-gradient-vibrant font-display font-black text-2xl">{editingTeamId ? 'Update Team Profile' : 'Register New Team'}</h3>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Global Team & Roster Database</p>
               </div>
             </div>
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Team Logo</label>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-sec border border-dashed border-main rounded flex items-center justify-center overflow-hidden relative">
-                  {newTeam.logo ? (
-                    <img src={newTeam.logo} className="w-full h-full object-contain" alt="Preview" />
-                  ) : (
-                    <Shield size={24} className="opacity-20" />
-                  )}
-                  {uploadingLogo && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>}
-                </div>
-                <div className="flex-1">
-                  <input 
-                    id="logo-upload" 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleLogoUpload} 
-                  />
-                  <label 
-                    htmlFor="logo-upload" 
-                    className="btn btn-secondary w-full py-2 text-xs flex items-center gap-2 cursor-pointer"
-                  >
-                    <Plus size={14} /> {newTeam.logo ? 'Change Logo' : 'Upload Logo'}
+            
+            <form onSubmit={handleCreateOrUpdateTeam} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-accent-primary" /> Full Team Name
                   </label>
+                  <input type="text" value={newTeam.fullName} onChange={e => setNewTeam({ ...newTeam, fullName: e.target.value })} required className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-accent-primary/50 transition-all font-bold" placeholder="e.g. Royal Challengers Bangalore" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-blue-500" /> Short Name
+                    </label>
+                    <input type="text" value={newTeam.shortName} onChange={e => setNewTeam({ ...newTeam, shortName: e.target.value })} required className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-blue-500/50 transition-all font-bold" placeholder="e.g. RCB" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-purple-500" /> Division/Dept
+                    </label>
+                    <input type="text" value={newTeam.department} onChange={e => setNewTeam({ ...newTeam, department: e.target.value })} className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-purple-500/50 transition-all font-bold" placeholder="Optional" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Team Branding</label>
+                  <div className="flex items-center gap-6 p-4 bg-black/20 rounded-2xl border border-white/5">
+                    <div className="w-20 h-20 bg-black/40 border border-dashed border-white/10 rounded-2xl flex items-center justify-center overflow-hidden relative shadow-inner">
+                      {newTeam.logo ? (
+                        <img src={newTeam.logo} className="w-full h-full object-contain p-2" alt="Preview" />
+                      ) : (
+                        <Shield size={32} className="opacity-10 text-main" />
+                      )}
+                      {uploadingLogo && <div className="absolute inset-0 bg-black/80 flex items-center justify-center backdrop-blur-sm"><div className="w-6 h-6 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" /></div>}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                      <label htmlFor="logo-upload" className="w-full bg-white/5 hover:bg-white/10 text-main font-black text-[10px] uppercase tracking-widest py-3 rounded-xl border border-white/10 transition-all cursor-pointer flex items-center justify-center gap-2">
+                        <Plus size={16} /> {newTeam.logo ? 'Change Brand Image' : 'Upload Team Logo'}
+                      </label>
+                      <p className="text-[9px] text-slate-500 italic text-center">Recommended: 512x512 Transparent PNG</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-main font-medium py-2 rounded transition-colors flex items-center justify-center gap-2">
-                <Plus size={16} /> {editingTeamId ? 'Update Team' : 'Add Team'}
-              </button>
-              {editingTeamId && (
-                <button type="button" onClick={() => { setEditingTeamId(null); setNewTeam({ fullName: '', shortName: '', department: '', logo: '' }); }} className="bg-sec hover:bg-white/20 text-main px-4 rounded transition-colors border border-main">
-                  Cancel
+
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 bg-accent-primary/10 border-2 border-accent-primary text-accent-primary font-black text-[10px] uppercase tracking-widest py-4 rounded-xl shadow-lg hover:bg-accent-primary hover:text-main transition-all flex items-center justify-center gap-2">
+                  <Plus size={18} /> {editingTeamId ? 'Save Changes' : 'Register Team'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editingTeamId && (
+                  <button type="button" onClick={() => { setEditingTeamId(null); setNewTeam({ fullName: '', shortName: '', department: '', logo: '' }); }} className="bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 px-6 rounded-xl border border-white/10 transition-all font-black text-[10px] uppercase tracking-widest">
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
         </div>
 
-        {/* Start Match Form */}
-        <div className="glass rounded-xl p-5 border border-main">
-          <h3 className="text-main font-bold mb-4 flex items-center gap-2">
-            <Gamepad2 size={18} className="text-blue-400" />
-            Initialize Match
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Match Name</label>
-              <input type="text" value={matchName} onChange={e => setMatchName(e.target.value)} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-blue-500" placeholder="e.g. Final Match / T20 Cup" />
+        {/* Initialize Match Form */}
+        <div className="glass rounded-2xl p-6 border-t-4 border-accent-secondary relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+             <Gamepad2 size={80} className="text-accent-secondary" />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-accent-secondary/10 flex items-center justify-center text-accent-secondary border border-accent-secondary/20">
+                <Gamepad2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-gradient-gold font-display font-black text-2xl">Match Configuration</h3>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Pre-match Toss & Setup</p>
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Team 1 (Name)</label>
-              <select value={matchTeam1} onChange={e => setMatchTeam1(e.target.value)} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-blue-500">
-                <option value="">Select Team</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.fullName} ({t.shortName})</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Team 2 (Name)</label>
-              <select value={matchTeam2} onChange={e => setMatchTeam2(e.target.value)} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-blue-500">
-                <option value="">Select Team</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.fullName} ({t.shortName})</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Toss Winner</label>
-              <select value={tossWinner} onChange={e => setTossWinner(e.target.value)} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-blue-500">
-                <option value="">Select Winner (Optional)</option>
-                {matchTeam1 && <option value="team1">{teams.find(t => t.id === matchTeam1)?.shortName}</option>}
-                {matchTeam2 && <option value="team2">{teams.find(t => t.id === matchTeam2)?.shortName}</option>}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Decision</label>
-              <select value={tossDecision} onChange={e => setTossDecision(e.target.value)} className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-blue-500">
-                <option value="bat">Bat First</option>
-                <option value="bowl">Bowl First</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={handleStartMatch} className="bg-blue-500 hover:bg-blue-600 text-main font-medium py-2 rounded transition-colors">
-                Initialize
-              </button>
-              <button onClick={handleUpdateToss} className="bg-sec hover:bg-white/20 text-main font-medium py-2 rounded transition-colors border border-main">
-                Update Toss
-              </button>
+
+            <div className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-accent-secondary" /> Tournament/Match Name
+                </label>
+                <input type="text" value={matchName} onChange={e => setMatchName(e.target.value)} className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-accent-secondary/50 transition-all font-bold" placeholder="e.g. ICC T20 World Cup Final" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                    <Shield size={10} className="text-emerald-500" /> Team 1
+                  </label>
+                  <select value={matchTeam1} onChange={e => setMatchTeam1(e.target.value)} className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-accent-secondary/50 appearance-none custom-select font-bold">
+                    <option value="" className="bg-slate-900">Select Team</option>
+                    {teams.map(t => <option key={t.id} value={t.id} className="bg-slate-900">{t.fullName}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                    <Shield size={10} className="text-blue-500" /> Team 2
+                  </label>
+                  <select value={matchTeam2} onChange={e => setMatchTeam2(e.target.value)} className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main outline-none focus:border-accent-secondary/50 appearance-none custom-select font-bold">
+                    <option value="" className="bg-slate-900">Select Team</option>
+                    {teams.map(t => <option key={t.id} value={t.id} className="bg-slate-900">{t.fullName}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-black/20 rounded-2xl border border-white/5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Toss Winner</label>
+                  <select value={tossWinner} onChange={e => setTossWinner(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-main text-xs outline-none appearance-none custom-select">
+                    <option value="" className="bg-slate-900">N/A</option>
+                    {matchTeam1 && <option value="team1" className="bg-slate-900">{teams.find(t => t.id === matchTeam1)?.shortName}</option>}
+                    {matchTeam2 && <option value="team2" className="bg-slate-900">{teams.find(t => t.id === matchTeam2)?.shortName}</option>}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Decision</label>
+                  <select value={tossDecision} onChange={e => setTossDecision(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-main text-xs outline-none appearance-none custom-select">
+                    <option value="bat" className="bg-slate-900">Elected to Bat</option>
+                    <option value="bowl" className="bg-slate-900">Elected to Bowl</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button onClick={handleStartMatch} className="bg-accent-secondary/10 border-2 border-accent-secondary text-accent-secondary font-black text-[10px] uppercase tracking-widest py-4 rounded-xl shadow-lg hover:bg-accent-secondary hover:text-main transition-all flex items-center justify-center gap-2">
+                  <Gamepad2 size={18} /> Initialize Match
+                </button>
+                <button onClick={handleUpdateToss} className="bg-sec hover:bg-white/10 text-main py-4 rounded-xl border border-main transition-all font-black text-[10px] uppercase tracking-widest">
+                  Update Toss Info
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
       {/* Manage Teams List */}
-      <div className="glass rounded-xl p-5 border border-main">
-        <h3 className="text-main font-bold mb-4 flex items-center gap-2">
-          <Users size={18} className="text-emerald-400" />
-          Manage Teams
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="glass rounded-2xl p-6 border border-white/5 relative overflow-hidden group">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent-primary/10 flex items-center justify-center text-accent-primary border border-accent-primary/20">
+              <Users size={20} />
+            </div>
+            <div>
+              <h3 className="text-gradient-vibrant font-display font-black text-2xl">Manage Teams</h3>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Registered Squads & Rosters</p>
+            </div>
+          </div>
+          <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 bg-black/20 rounded-full border border-white/5">
+             Total Teams: {teams.length}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {teams.map(team => (
-            <div key={team.id} className="bg-sec border border-main rounded-lg p-4 flex items-center justify-between group transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/5 rounded border border-main flex items-center justify-center overflow-hidden">
-                  {team.logo ? (
-                    <img src={team.logo} className="w-full h-full object-contain" alt="Logo" />
-                  ) : (
-                    <Shield size={20} className="opacity-20" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-main font-bold text-sm">{team.fullName}</div>
-                  <div className="text-slate-400 text-[10px] uppercase tracking-widest">{team.shortName} • {team.players?.length || 0} Players</div>
+            <div key={team.id} className="bg-black/20 border border-white/5 rounded-2xl p-4 hover:border-accent-primary/30 hover:bg-black/40 transition-all group/card relative overflow-hidden">
+              <div className="flex items-start justify-between relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover/card:border-accent-primary/50 transition-colors">
+                    {team.logo ? (
+                      <img src={team.logo} className="w-full h-full object-contain p-1.5" alt="Logo" />
+                    ) : (
+                      <Shield size={24} className="opacity-10 text-main" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-main font-bold text-base truncate pr-2" title={team.fullName}>{team.fullName}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                       <span className="text-accent-primary text-[10px] font-black uppercase tracking-widest bg-accent-primary/10 px-2 py-0.5 rounded-md border border-accent-primary/20">{team.shortName}</span>
+                       <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                          {team.players?.length || 0} Players
+                       </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => startEditTeam(team)} className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Team">
+              
+              <div className="flex items-center gap-2 mt-6 pt-4 border-t border-white/5 opacity-0 group-hover/card:opacity-100 transition-all translate-y-2 group-hover/card:translate-y-0">
+                <button onClick={() => setSelectedTeamId(team.id)} className="flex-1 bg-white/5 hover:bg-accent-primary/20 text-slate-400 hover:text-accent-primary py-2 rounded-xl border border-white/10 transition-all font-black text-[10px] uppercase tracking-widest">
+                  Manage Roster
+                </button>
+                <button onClick={() => startEditTeam(team)} className="w-10 h-10 flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-main rounded-xl transition-all border border-blue-500/20" title="Edit Team">
                   <Gamepad2 size={16} />
                 </button>
-                <button onClick={() => handleDeleteTeam(team.id)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Team">
+                <button onClick={() => handleDeleteTeam(team.id)} className="w-10 h-10 flex items-center justify-center bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-main rounded-xl transition-all border border-red-500/20" title="Delete Team">
                   <Trash2 size={16} />
                 </button>
               </div>
             </div>
           ))}
           {teams.length === 0 && (
-            <div className="col-span-full py-8 text-center text-slate-500 italic text-sm">
-              No teams created yet.
+            <div className="col-span-full py-16 flex flex-col items-center justify-center glass border-dashed rounded-2xl">
+               <Shield size={48} className="text-slate-700 mb-4 opacity-20" />
+               <p className="text-slate-500 text-sm font-bold uppercase tracking-widest italic">No teams registered yet</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Roster Management */}
-      <div className="glass rounded-xl p-5 border border-main">
-        <h3 className="text-main font-bold mb-4 flex items-center gap-2">
-          <Users size={18} className="text-purple-400" />
-          Roster Management
-        </h3>
-        <div className="mb-4">
-          <select value={selectedTeamId || ''} onChange={e => setSelectedTeamId(e.target.value)} className="w-full max-w-sm bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-purple-500">
-            <option value="" className="bg-white text-black">Select Team to Manage</option>
-            {teams.map(t => <option key={t.id} value={t.id} className="bg-white text-black">{t.fullName}</option>)}
-          </select>
+      <div id="roster-section" className="glass rounded-2xl p-6 border border-white/5 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+              <Users size={20} />
+            </div>
+            <div>
+              <h3 className="text-gradient-gold font-display font-black text-2xl">Roster Management</h3>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Edit Player Names & Jersey Numbers</p>
+            </div>
+          </div>
+          <div className="relative w-full md:w-80">
+            <select value={selectedTeamId || ''} onChange={e => setSelectedTeamId(e.target.value)} className="w-full bg-sec border border-main rounded-xl px-4 py-3 text-main text-xs outline-none focus:border-purple-500 appearance-none custom-select font-black tracking-widest uppercase">
+              <option value="" className="bg-slate-900">Select Team to Manage</option>
+              {teams.map(t => <option key={t.id} value={t.id} className="bg-slate-900">{t.fullName}</option>)}
+            </select>
+          </div>
         </div>
 
         {selectedTeamId && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="lg:col-span-1">
-              <div className="bg-sec border border-main rounded-lg p-4">
-                <h4 className="text-main text-sm font-semibold mb-3">Add New Player</h4>
-                <form onSubmit={handleAddPlayer} className="space-y-3">
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Player Name</label>
-                    <input type="text" value={newPlayer.name} onChange={e => setNewPlayer({ ...newPlayer, name: e.target.value })} required className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-purple-500" />
+              <div className="bg-black/20 border border-white/10 rounded-2xl p-6 sticky top-24">
+                <h4 className="text-main font-black text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Register Player
+                </h4>
+                <form onSubmit={handleAddPlayer} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Name</label>
+                    <input type="text" value={newPlayer.name} onChange={e => setNewPlayer({ ...newPlayer, name: e.target.value })} required className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-main text-sm outline-none focus:border-purple-500" placeholder="e.g. Virat Kohli" />
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Jersey No.</label>
-                    <input type="text" value={newPlayer.jersey} onChange={e => setNewPlayer({ ...newPlayer, jersey: e.target.value })} required className="w-full bg-sec border border-main rounded px-3 py-2 text-main outline-none focus:border-purple-500" />
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Jersey No.</label>
+                    <input type="text" value={newPlayer.jersey} onChange={e => setNewPlayer({ ...newPlayer, jersey: e.target.value })} required className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-main text-sm outline-none focus:border-purple-500" placeholder="e.g. 18" />
                   </div>
-                  <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded transition-colors flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
-                    <Plus size={16} /> Add Player
+                  <button type="submit" className="w-full bg-purple-500/10 border-2 border-purple-500 text-purple-500 font-black text-[10px] uppercase tracking-widest py-4 rounded-xl shadow-lg hover:bg-purple-500 hover:text-main transition-all flex items-center justify-center gap-2 mt-4">
+                    <Plus size={18} /> Add to Squad
                   </button>
                 </form>
               </div>
             </div>
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            
+            <div className="lg:col-span-3">
+               <div className="flex items-center gap-3 mb-6">
+                  <h4 className="text-main font-black text-[10px] uppercase tracking-[0.2em]">Active Squad</h4>
+                  <div className="h-px flex-1 bg-white/5" />
+                  <span className="text-[10px] text-slate-500 font-bold">
+                    {teams.find(t => t.id === selectedTeamId)?.players.length || 0} Total
+                  </span>
+               </div>
+               
+               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {teams.find(t => t.id === selectedTeamId)?.players.map(p => (
-                  <div key={p.id} className="bg-sec border border-main rounded p-3 flex items-center justify-between group">
-                    <div>
-                      <div className="text-main font-medium text-sm">{p.name}</div>
-                      <div className="text-slate-500 text-xs font-bold">#{p.jersey}</div>
+                  <div key={p.id} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-all hover:bg-black/40 hover:border-purple-500/30">
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 font-mono font-black border border-purple-500/20">
+                          {p.jersey}
+                       </div>
+                       <div>
+                         <div className="text-main font-bold text-sm">{p.name}</div>
+                         <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Jersey #{p.jersey}</div>
+                       </div>
                     </div>
-                    <button onClick={() => handleDeletePlayer(selectedTeamId, p.id)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded">
-                      <Trash2 size={14} />
+                    <button onClick={() => handleDeletePlayer(selectedTeamId, p.id)} className="w-8 h-8 flex items-center justify-center text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-lg">
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 ))}
+                {(!teams.find(t => t.id === selectedTeamId)?.players.length) && (
+                  <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                     <p className="text-slate-500 text-xs font-bold uppercase tracking-widest italic">No players in this roster yet</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

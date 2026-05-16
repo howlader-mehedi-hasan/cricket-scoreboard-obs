@@ -67,3 +67,13 @@ Need a run out button for giving run out, if I click run out button, then then n
 ╚══════════════════════════════════════════════════╝
 Network:  http://169.254.188.232:3000
 here the local network IP address is not matching of my device local IP address
+
+
+when initializing the match and big screen popup messages is showing there both the logo of both two things are not visible. make it visible. fix it.
+
+
+After the end of the first inning of a mass, the biggest screen pop-up is not showing the nursery things. It is showing some unnecessary things. just fix this.
+
+In admin panel, there need a option to Hide and unhide the main scoreboard from the obvious overly, when needed the scoreboard will be hide and when needed the scoreboard will be visible.
+
+ip fixing

@@ -11,105 +11,114 @@
   .border-main { border-color: var(--border-subtle) !important; }
   .bg-card { background-color: var(--bg-card) !important; }
   .bg-sec { background-color: var(--bg-secondary) !important; }
+  .font-display { font-family: 'Outfit', sans-serif !important; }
+  
+  /* Multicolor Dynamic Text */
+  .text-gradient-vibrant {
+    background: linear-gradient(to right, #f43f5e, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-gold {
+    background: linear-gradient(to right, #f59e0b, #ef4444, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-nature {
+    background: linear-gradient(to right, #10b981, #3b82f6, #6366f1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes progress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-progress {
+  animation: progress 2s infinite ease-in-out;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 10px;
+  transition: all 0.3s ease;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #10b981;
+  background: var(--accent-primary);
 }
 
 :root {
-  --admin-bg: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-  --bg-card: rgba(15, 23, 42, 0.75);
-  --bg-secondary: rgba(30, 41, 59, 0.5);
+  /* High Contrast Dark Theme (Default) */
+  --admin-bg: #000000;
+  --bg-card: rgba(10, 10, 10, 0.95);
+  --bg-secondary: #0a0a0a;
   --text-main: #ffffff;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-muted: #cbd5e1;
+  --text-dim: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.15);
   --border-active: #10b981;
-  --input-bg: rgba(255, 255, 255, 0.06);
-  --input-border: rgba(255, 255, 255, 0.1);
-  --btn-secondary: rgba(255, 255, 255, 0.08);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --input-bg: #050505;
+  --input-border: #334155;
+  --btn-secondary: #1a1a1a;
+  --scrollbar-thumb: #334155;
+  --accent-primary: #10b981;
+  --accent-secondary: #3b82f6;
+  --glass-blur: blur(20px);
 }
 
-.light-theme {
-  --admin-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  --bg-card: #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-main: #020617;
-  --text-muted: #334155;
-  --text-dim: #64748b;
-  --border-subtle: rgba(0, 0, 0, 0.15);
+[data-theme='light'], .light-theme {
+  /* High Contrast Light Theme */
+  --admin-bg: #ffffff;
+  --bg-card: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --text-main: #000000;
+  --text-muted: #1e293b;
+  --text-dim: #475569;
+  --border-subtle: rgba(0, 0, 0, 0.2);
   --border-active: #059669;
-  --input-bg: #fdfdfd;
-  --input-border: #94a3b8;
-  --btn-secondary: #f1f5f9;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --input-bg: #ffffff;
+  --input-border: #000000;
+  --btn-secondary: #e2e8f0;
+  --scrollbar-thumb: #94a3b8;
+  --accent-primary: #059669;
+  --accent-secondary: #2563eb;
+  --glass-blur: blur(10px);
 }
 
-/* Force override for light mode readability */
-.light-theme .text-white, 
-.light-theme .text-slate-50,
-.light-theme .text-slate-100, 
-.light-theme .text-slate-200, 
-.light-theme .text-slate-300 {
-  color: #000000 !important;
-}
-
+/* Base utility overrides */
+[data-theme='light'] .text-slate-400, 
+[data-theme='light'] .text-slate-500,
 .light-theme .text-slate-400, 
-.light-theme .text-slate-500,
-.light-theme .text-slate-600 {
-  color: #1e293b !important; /* Very dark slate */
+.light-theme .text-slate-500 {
+  color: var(--text-muted) !important;
 }
 
-/* Handle colored tip text and delivery types */
-.light-theme .text-cyan-200\/50,
-.light-theme .text-cyan-300,
-.light-theme .text-amber-200\/60,
-.light-theme .text-amber-300,
-.light-theme .text-amber-400,
-.light-theme .text-emerald-300,
-.light-theme .text-emerald-400,
-.light-theme .text-purple-300,
-.light-theme .text-pink-300,
-.light-theme .text-orange-300 {
-  color: #0f172a !important; /* Dark blue/black for visibility */
-}
-
-/* Force all buttons to have black text and borders in light mode */
-.light-theme button,
-.light-theme button span,
-.light-theme button div,
-.light-theme button svg {
-  color: #000000 !important;
-}
-
-.light-theme button {
-  border: 1px solid #000000 !important;
-}
-
+[data-theme='light'] .bg-white\/5,
+[data-theme='light'] .bg-slate-800\/50,
 .light-theme .bg-white\/5,
-.light-theme .bg-white\/10,
-.light-theme .bg-slate-800\/50,
-.light-theme .bg-sec {
-  background-color: #f1f5f9 !important;
+.light-theme .bg-slate-800\/50 {
+  background-color: var(--bg-secondary) !important;
 }
 
-.light-theme .border-white\/5,
+[data-theme='light'] .border-white\/10,
+[data-theme='light'] .border-white\/5,
 .light-theme .border-white\/10,
-.light-theme .border-main {
-  border-color: #cbd5e1 !important;
+.light-theme .border-white\/5 {
+  border-color: var(--border-subtle) !important;
 }
 
 /* ── Global Reset ── */
@@ -134,14 +143,15 @@ body.overlay-body {
 /* ── Glassmorphism utility ── */
 .glass {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-subtle);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
-.light-theme .glass {
-  border: 1px solid #000000 !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+[data-theme='light'] .glass, .light-theme .glass {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .light-theme .input-field,
@@ -251,6 +261,22 @@ body.overlay-body {
 .tab-inactive:hover {
   color: var(--text-muted);
   background: var(--btn-secondary);
+}
+
+/* ── Premium Navigation Styles ── */
+.nav-item-active {
+  color: var(--accent-primary);
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.nav-item-hover:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme='light'] .nav-item-active,
+.light-theme .nav-item-active {
+  color: var(--accent-primary);
+  text-shadow: none;
 }
 
 /* ── Input styles ── */

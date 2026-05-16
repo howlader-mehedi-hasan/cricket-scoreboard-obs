@@ -112,7 +112,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           className="flex items-center gap-2 cursor-pointer group"
           onClick={() => startEdit(field)}
         >
-          <span className="text-white text-sm font-medium">
+          <span className="text-main text-sm font-black uppercase tracking-widest">
             {prefix && <span className="text-emerald-500 font-black mr-1.5">{prefix}</span>}
             {matchData[field] || '—'}
           </span>
@@ -127,7 +127,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       {label && <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1">{label}</label>}
       <div className="relative group">
         <select
-          className="w-full bg-slate-800 border border-emerald-500/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500 appearance-none cursor-pointer transition-all pr-10"
+          className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-sm text-main outline-none focus:border-accent-primary appearance-none cursor-pointer transition-all pr-10 font-bold"
           value={matchData[field] || ''}
           autoFocus
           onBlur={onSelect}
@@ -762,6 +762,41 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     });
   }
 
+  function handleManualStrikerRuns(delta) {
+    emit('match:update', { field: 'striker_runs', value: Math.max(0, parseInt(matchData.striker_runs || '0') + delta) });
+  }
+
+  function handleManualStrikerBalls(delta) {
+    emit('match:update', { field: 'striker_balls', value: Math.max(0, parseInt(matchData.striker_balls || '0') + delta) });
+  }
+
+  function handleManualNonStrikerRuns(delta) {
+    emit('match:update', { field: 'non_striker_runs', value: Math.max(0, parseInt(matchData.non_striker_runs || '0') + delta) });
+  }
+
+  function handleManualNonStrikerBalls(delta) {
+    emit('match:update', { field: 'non_striker_balls', value: Math.max(0, parseInt(matchData.non_striker_balls || '0') + delta) });
+  }
+
+  function handleManualBowlerRuns(delta) {
+    emit('match:update', { field: 'bowler_runs', value: Math.max(0, parseInt(matchData.bowler_runs || '0') + delta) });
+  }
+
+  function handleManualBowlerWickets(delta) {
+    emit('match:update', { field: 'bowler_wickets', value: Math.max(0, parseInt(matchData.bowler_wickets || '0') + delta) });
+  }
+
+  function handleManualBowlerBalls(delta) {
+    const parts = (matchData.bowler_overs || '0.0').split('.');
+    const w = parseInt(parts[0] || '0');
+    const b = parseInt(parts[1] || '0');
+    let totalBalls = (w * 6) + b + delta;
+    if (totalBalls < 0) totalBalls = 0;
+    const newW = Math.floor(totalBalls / 6);
+    const newB = totalBalls % 6;
+    emit('match:update', { field: 'bowler_overs', value: `${newW}.${newB}` });
+  }
+
   // Custom Overthrow from modal
   function handleCustomOverthrow() {
     const { deliveryType, initialRuns, isBoundary, additionalRuns } = otConfig;
@@ -935,196 +970,447 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Score Display */}
-      <div className="glass rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-white font-display font-bold text-lg">
-              {matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name}
-            </h3>
-            <span className="text-slate-400 text-xs">Innings {innings}</span>
-          </div>
-          <div className="text-right flex flex-col items-end gap-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center bg-slate-900/50 rounded-lg border border-white/10 overflow-hidden">
-                <button 
-                  onClick={() => handleManualRuns(-1)}
-                  className="px-2 py-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors border-r border-white/10"
-                >
+    <div className="space-y-6">
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Score Display (Image 1 context) */}
+        <div className="lg:col-span-12 xl:col-span-5 glass rounded-2xl p-4 md:p-6 relative overflow-hidden group flex flex-col justify-between">
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent-primary/10 rounded-full blur-3xl group-hover:bg-accent-primary/20 transition-all duration-700" />
+          
+          <div className="flex flex-col gap-6 relative z-10 h-full">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-accent-primary animate-pulse shadow-[0_0_8px_var(--accent-primary)]" />
+                  <h3 className="text-main font-display font-black text-xl md:text-2xl tracking-tight truncate">
+                    {matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                    Innings {innings}
+                  </span>
+                  <span className="text-accent-primary text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
+                    <BarChart2 size={12} /> Live Score
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-1.5 border border-white/5 backdrop-blur-sm">
+                <button onClick={() => handleManualBalls(-1)} className="p-1 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors rounded-md">
                   <Minus size={14} />
                 </button>
-                <div className="px-4 text-white font-display font-black text-4xl tabular-nums">
+                <div className="flex items-baseline gap-1 mx-2">
+                  <span className="text-main text-lg font-mono font-black tracking-tight">{overs}.{balls}</span>
+                  <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Overs</span>
+                </div>
+                <button onClick={() => handleManualBalls(1)} className="p-1 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors rounded-md">
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 mt-auto">
+              {/* Runs Control */}
+              <div className="flex-1 w-full flex items-center justify-between bg-black/30 rounded-2xl border border-white/5 p-1.5 shadow-inner backdrop-blur-md">
+                <button 
+                  onClick={() => handleManualRuns(-1)}
+                  className="w-10 h-12 md:w-12 md:h-14 flex items-center justify-center hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all rounded-xl"
+                >
+                  <Minus size={18} />
+                </button>
+                <div className="text-main font-display font-black text-5xl md:text-7xl tabular-nums leading-none tracking-tighter">
                   {runs}
                 </div>
                 <button 
                   onClick={() => handleManualRuns(1)}
-                  className="px-2 py-1 hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400 transition-colors border-l border-white/10"
+                  className="w-10 h-12 md:w-12 md:h-14 flex items-center justify-center hover:bg-accent-primary/10 text-slate-500 hover:text-accent-primary transition-all rounded-xl"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+              
+              {/* Wickets Control */}
+              <div className="flex items-center bg-black/30 rounded-2xl border border-white/5 p-1.5 shadow-inner backdrop-blur-md h-full">
+                <button 
+                  onClick={() => handleManualWickets(-1)}
+                  className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all rounded-xl"
+                >
+                  <Minus size={14} />
+                </button>
+                <div className="px-3 md:px-5 text-slate-500 text-3xl md:text-5xl font-black italic tabular-nums leading-none flex items-center">
+                  <span className="text-xl md:text-2xl mr-0.5 opacity-50 not-italic">/</span>{wickets}
+                </div>
+                <button 
+                  onClick={() => handleManualWickets(1)}
+                  className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center hover:bg-accent-primary/10 text-slate-500 hover:text-accent-primary transition-all rounded-xl"
                 >
                   <Plus size={14} />
                 </button>
               </div>
-              
-              <div className="flex items-center bg-slate-900/50 rounded-lg border border-white/10 overflow-hidden">
-                <button 
-                  onClick={() => handleManualWickets(-1)}
-                  className="px-1.5 py-0.5 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors border-r border-white/10"
-                >
-                  <Minus size={12} />
-                </button>
-                <div className="px-3 text-slate-500 text-3xl font-black italic tabular-nums">
-                  /{wickets}
-                </div>
-                <button 
-                  onClick={() => handleManualWickets(1)}
-                  className="px-1.5 py-0.5 hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400 transition-colors border-l border-white/10"
-                >
-                  <Plus size={12} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center bg-slate-900/40 rounded-md border border-white/5 overflow-hidden">
-                <button 
-                  onClick={() => handleManualBalls(-1)}
-                  className="px-1.5 py-0.5 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors"
-                >
-                  <Minus size={12} />
-                </button>
-                <span className="px-2 text-slate-400 text-sm font-mono font-bold tracking-tight">
-                  {overs}.{balls} <span className="text-[10px] opacity-50 uppercase ml-1">Overs</span>
-                </span>
-                <button 
-                  onClick={() => handleManualBalls(1)}
-                  className="px-1.5 py-0.5 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors"
-                >
-                  <Plus size={12} />
-                </button>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Current Players */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-white/5">
-          <div className="glass-light rounded-lg p-3 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Striker</span>
-              </div>
-              {matchData.striker_name && (
-                <button 
-                  onClick={() => setChangingStriker(!changingStriker)}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                  title="Change Player"
-                >
-                  <ArrowLeftRight size={14} />
-                </button>
-              )}
+        {/* Right Column: Player Management (Image 2 context) */}
+        <div className="lg:col-span-12 xl:col-span-7 glass rounded-2xl p-4 md:p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+              <Users size={16} />
             </div>
-            
-            {(!matchData.striker_name || changingStriker) ? (
-              <PlayerSelect label="" field="striker_name" players={battingPlayers} onSelect={() => setChangingStriker(false)} />
-            ) : (
-              <div className="flex items-center justify-between">
-                 <EditableField label="" field="striker_name" prefix={getJersey(matchData.striker_name, battingPlayers)} />
-                 <button onClick={() => emit('match:update', {field: 'striker_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Player">
-                   <RotateCcw size={12}/>
-                 </button>
-              </div>
-            )}
-            <span className="text-white text-sm font-mono font-bold mt-1 block">
-              {strikerRuns} <span className="text-slate-400 text-xs font-normal">({strikerBalls})</span>
-            </span>
+            <div>
+              <h4 className="text-main font-display font-black text-base md:text-lg tracking-tight uppercase">Active Roster</h4>
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Personnel Control</p>
+            </div>
           </div>
 
-          <div className="glass-light rounded-lg p-3">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Non-Striker</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Striker Card */}
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/5 relative overflow-hidden group/card hover:bg-white/10 transition-all duration-300">
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/card:opacity-20 transition-opacity">
+                <Zap size={40} className="text-accent-primary" />
               </div>
-              {matchData.non_striker_name && (
-                <button 
-                  onClick={() => setChangingNonStriker(!changingNonStriker)}
-                  className="text-slate-400 hover:text-white transition-colors"
-                  title="Change Player"
-                >
-                  <ArrowLeftRight size={14} />
-                </button>
-              )}
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-accent-primary animate-pulse" />
+                  <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Striker</span>
+                </div>
+                {matchData.striker_name && (
+                  <button 
+                    onClick={() => setChangingStriker(!changingStriker)}
+                    className="text-accent-primary hover:text-main transition-colors bg-accent-primary/10 p-1.5 rounded-lg border border-accent-primary/20"
+                    title="Change Player"
+                  >
+                    <ArrowLeftRight size={14} />
+                  </button>
+                )}
+              </div>
+              
+              <div className="relative z-10">
+                {(!matchData.striker_name || changingStriker) ? (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <PlayerSelect label="" field="striker_name" players={battingPlayers} onSelect={() => setChangingStriker(false)} />
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-4">
+                     <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-accent-primary font-mono font-black text-sm">{getJersey(matchData.striker_name, battingPlayers)}</span>
+                          <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.striker_name}</h4>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="text-main font-display font-black text-2xl tabular-nums">{strikerRuns}</span>
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <button onClick={() => handleManualStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
+                                <Minus size={14} />
+                              </button>
+                              <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-500 text-sm font-medium">({strikerBalls})</span>
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <button onClick={() => handleManualStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                                <Minus size={12} />
+                              </button>
+                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                     </div>
+                     <button onClick={() => emit('match:update', {field: 'striker_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
+                       <RotateCcw size={14}/>
+                     </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {(!matchData.non_striker_name || changingNonStriker) ? (
-              <PlayerSelect label="" field="non_striker_name" players={battingPlayers} onSelect={() => setChangingNonStriker(false)} />
-            ) : (
-              <div className="flex items-center justify-between">
-                <EditableField label="" field="non_striker_name" prefix={getJersey(matchData.non_striker_name, battingPlayers)} />
-                <button onClick={() => emit('match:update', {field: 'non_striker_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Player">
-                  <RotateCcw size={12}/>
-                </button>
+            {/* Non-Striker Card */}
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/5 relative overflow-hidden group/card hover:bg-white/10 transition-all duration-300">
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-600" />
+                  <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Non-Striker</span>
+                </div>
+                {matchData.non_striker_name && (
+                  <button 
+                    onClick={() => setChangingNonStriker(!changingNonStriker)}
+                    className="text-slate-400 hover:text-main transition-colors bg-white/5 p-1.5 rounded-lg border border-white/10"
+                    title="Change Player"
+                  >
+                    <ArrowLeftRight size={14} />
+                  </button>
+                )}
               </div>
-            )}
-            <span className="text-slate-300 text-sm font-mono mt-1 block">
-              {matchData.non_striker_runs || 0} <span className="text-slate-500 text-xs font-normal">({matchData.non_striker_balls || 0})</span>
-            </span>
-          </div>
-
-          <div className="glass-light rounded-lg p-3">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Bowler</span>
+              
+              <div className="relative z-10">
+                {(!matchData.non_striker_name || changingNonStriker) ? (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <PlayerSelect label="" field="non_striker_name" players={battingPlayers} onSelect={() => setChangingNonStriker(false)} />
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-slate-500 font-mono font-black text-sm">{getJersey(matchData.non_striker_name, battingPlayers)}</span>
+                        <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.non_striker_name}</h4>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="text-main font-display font-black text-2xl tabular-nums">{matchData.non_striker_runs || 0}</span>
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <button onClick={() => handleManualNonStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
+                                <Minus size={14} />
+                              </button>
+                              <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualNonStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-500 text-sm font-medium">({matchData.non_striker_balls || 0})</span>
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <button onClick={() => handleManualNonStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                                <Minus size={12} />
+                              </button>
+                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualNonStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                    <button onClick={() => emit('match:update', {field: 'non_striker_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
+                      <RotateCcw size={14}/>
+                    </button>
+                  </div>
+                )}
               </div>
-              {matchData.bowler_name && (
-                <button 
-                  onClick={() => setChangingBowler(!changingBowler)}
-                  className="text-amber-400 hover:text-amber-300 transition-colors"
-                  title="Change Bowler"
-                >
-                  <ArrowLeftRight size={14} />
-                </button>
-              )}
             </div>
 
-            {(!matchData.bowler_name || changingBowler) ? (
-              <PlayerSelect label="" field="bowler_name" players={bowlingPlayers} isBowler onSelect={() => setChangingBowler(false)} />
-            ) : (
-              <div className="flex items-center justify-between">
-                <EditableField label="" field="bowler_name" prefix={getJersey(matchData.bowler_name, bowlingPlayers)} />
-                <button onClick={() => emit('match:update', {field: 'bowler_name', value: ''})} className="text-slate-500 hover:text-white" title="Reset Bowler">
-                  <RotateCcw size={12}/>
-                </button>
+            {/* Bowler Card */}
+            <div className="bg-accent-secondary/5 rounded-2xl p-4 border border-accent-secondary/10 relative overflow-hidden group/card hover:bg-accent-secondary/10 transition-all duration-300">
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/card:opacity-20 transition-opacity">
+                <Wind size={40} className="text-accent-secondary" />
               </div>
-            )}
-            <span className="text-slate-300 text-sm font-mono mt-1 block">
-              {bowlerWickets}/{bowlerRuns} <span className="text-slate-500 text-xs font-normal">({bowlerOversVal})</span>
-            </span>
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-accent-secondary animate-pulse shadow-[0_0_8px_var(--accent-secondary)]" />
+                  <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Current Bowler</span>
+                </div>
+                {matchData.bowler_name && (
+                  <button 
+                    onClick={() => setChangingBowler(!changingBowler)}
+                    className="text-accent-secondary hover:text-main transition-colors bg-accent-secondary/10 p-1.5 rounded-lg border border-accent-secondary/20"
+                    title="Change Bowler"
+                  >
+                    <ArrowLeftRight size={14} />
+                  </button>
+                )}
+              </div>
+              
+              <div className="relative z-10">
+                {(!matchData.bowler_name || changingBowler) ? (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <PlayerSelect label="" field="bowler_name" players={bowlingPlayers} isBowler onSelect={() => setChangingBowler(false)} />
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-accent-secondary font-mono font-black text-sm">{getJersey(matchData.bowler_name, bowlingPlayers)}</span>
+                        <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.bowler_name}</h4>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-main font-display font-black text-2xl tabular-nums">{bowlerWickets}/{bowlerRuns}</span>
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">W</span>
+                            <button onClick={() => handleManualBowlerWickets(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12}/></button>
+                            <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualBowlerWickets(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12}/></button>
+                          </div>
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">R</span>
+                            <button onClick={() => handleManualBowlerRuns(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12}/></button>
+                            <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualBowlerRuns(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12}/></button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-slate-500 text-sm font-medium">({bowlerOversVal})</span>
+                        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                          <button onClick={() => handleManualBowlerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Minus size={12}/></button>
+                          <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+              <button onClick={() => handleManualBowlerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Plus size={12}/></button>
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                    <button onClick={() => emit('match:update', {field: 'bowler_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Bowler">
+                      <RotateCcw size={14}/>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Scoring Buttons */}
-        <div className="glass rounded-xl p-5 border border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-bold flex items-center gap-2">
-              <BarChart2 size={18} className="text-emerald-400" />
-              Match Control
-            </h3>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-white/5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mr-1">PowerPlay</span>
+      {/* ═══════ Dashboard Control Cockpit ═══════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 relative z-10">
+        
+        {/* Column 1: Action Center (Left) */}
+        <div className="glass rounded-2xl p-5 border border-white/10 relative overflow-hidden group h-full">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-accent-primary/10 flex items-center justify-center text-accent-primary border border-accent-primary/20">
+              <Zap size={18} />
+            </div>
+            <div>
+              <h3 className="text-main font-display font-black text-lg tracking-tight">Action Center</h3>
+              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Primary Scoring</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => addRuns(0)} className="h-14 rounded-xl bg-sec border border-main text-main font-display font-black text-xs hover:border-slate-500 transition-all flex flex-col items-center justify-center gap-1 active:scale-95 group/btn shadow-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-500 group-hover/btn:scale-125 transition-transform" />
+                <span className="uppercase tracking-widest text-[9px] opacity-60">Dot</span>
+              </button>
+              <button onClick={() => addRuns(1)} className="h-14 rounded-xl bg-sec border border-main text-main font-display font-black text-2xl hover:bg-accent-secondary/5 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-sm">1</button>
+              <button onClick={() => addRuns(2)} className="h-14 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-accent-secondary font-display font-black text-2xl hover:bg-accent-secondary/10 hover:border-accent-secondary/40 transition-all active:scale-95 shadow-sm">2</button>
+              <button onClick={() => addRuns(3)} className="h-14 rounded-xl bg-accent-secondary/10 border border-accent-secondary/30 text-accent-secondary font-display font-black text-2xl hover:bg-accent-secondary/20 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-md">3</button>
+              <button onClick={() => addRuns(4)} className="h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-display font-black text-3xl hover:bg-emerald-500 hover:text-main transition-all active:scale-95 shadow-lg shadow-emerald-500/10">4</button>
+              <button onClick={() => addRuns(6)} className="h-14 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-600 dark:text-violet-400 font-display font-black text-3xl hover:bg-violet-500 hover:text-main transition-all active:scale-95 shadow-lg shadow-violet-500/10">6</button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={handleWide} className="h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 font-black text-[10px] uppercase tracking-wider hover:bg-purple-500/20 transition-all active:scale-95">Wide</button>
+              <button onClick={handleNoBall} className="h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 font-black text-[10px] uppercase tracking-wider hover:bg-pink-500/20 transition-all active:scale-95">No Ball</button>
+            </div>
+
+            <button onClick={handleWicket} className="w-full h-14 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-main font-display font-black text-base hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3">
+              <Zap size={18} className="fill-current" />
+              WICKET
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={swapStrikers} className="h-12 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-black text-[9px] uppercase tracking-wider hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <ArrowLeftRight size={14} className="text-accent-primary" />
+                Swap
+              </button>
+              <button onClick={handleUndo} className="h-12 rounded-xl bg-red-500/5 border border-red-500/10 text-red-400/70 font-black text-[9px] uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <Undo2 size={14} />
+                Undo
+              </button>
+            </div>
+            
+            <button onClick={() => emit('match:update', { field: 'show_partnership', value: matchData.show_partnership === 'true' ? 'false' : 'true' })} className={`w-full h-12 rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-2 ${
+               matchData.show_partnership === 'true' ? 'bg-accent-primary/10 border-accent-primary/30 text-accent-primary' : 'bg-white/5 border-white/10 text-slate-400'
+            }`}>
+               <Users size={14} />
+               <span className="text-[10px] font-black uppercase tracking-widest">Partnership View</span>
+            </button>
+          </div>
+        </div>
+        {/* Column 2: Overthrows & Extras (Middle) */}
+        <div className="glass rounded-2xl p-5 border border-cyan-500/20 bg-cyan-500/5 relative overflow-hidden group h-full">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+              <Wind size={18} />
+            </div>
+            <div>
+              <h3 className="text-cyan-400 font-display font-black text-lg tracking-tight">Overthrows & Extras</h3>
+              <p className="text-cyan-500/50 text-[9px] font-bold uppercase tracking-widest">Advanced Actions</p>
+            </div>
+            <button onClick={() => setShowOTModal(true)} className="ml-auto bg-cyan-500 text-black font-black text-[9px] px-3 py-1.5 rounded-lg hover:bg-cyan-400 transition-all active:scale-95">
+              Custom
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="text-[9px] text-slate-500 uppercase tracking-widest font-black block mb-3 flex items-center gap-2">
+                Quick Overthrows
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={handleOT1} className="h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-black text-[10px] hover:bg-cyan-500/20 transition-all active:scale-95">OT +1</button>
+                <button onClick={handleOT2} className="h-11 rounded-xl bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 font-black text-[10px] hover:bg-cyan-500/25 transition-all active:scale-95">OT +2</button>
+                <button onClick={handleOT4} className="h-11 rounded-xl bg-cyan-500/25 border border-cyan-500/35 text-cyan-100 font-black text-[10px] hover:bg-cyan-500/35 transition-all active:scale-95">OT +4</button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] text-slate-500 uppercase tracking-widest font-black block mb-3">Byes & Leg Byes</label>
+              <div className="grid grid-cols-4 gap-2">
+                <button onClick={() => handleBye(1)} className="h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-black text-[10px] hover:bg-indigo-500/20 transition-all active:scale-95">B 1</button>
+                <button onClick={() => handleBye(4)} className="h-11 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 font-black text-[10px] hover:bg-indigo-500/25 transition-all active:scale-95">B 4</button>
+                <button onClick={() => handleLegBye(1)} className="h-11 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 font-black text-[10px] hover:bg-violet-500/20 transition-all active:scale-95">LB 1</button>
+                <button onClick={() => handleLegBye(4)} className="h-11 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 font-black text-[10px] hover:bg-violet-500/25 transition-all active:scale-95">LB 4</button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] text-slate-500 uppercase tracking-widest font-black block mb-3">Special Scenarios</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={handleWide4} className="h-11 rounded-xl bg-purple-500/15 border border-purple-500/25 text-purple-300 font-black text-[10px] hover:bg-purple-500/25 transition-all active:scale-95">Wide + 4</button>
+                <button onClick={handleNoBall4} className="h-11 rounded-xl bg-pink-500/15 border border-pink-500/25 text-pink-300 font-black text-[10px] hover:bg-pink-500/25 transition-all active:scale-95">NB + 4</button>
+                <button onClick={handleLegBye4} className="h-11 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 font-black text-[10px] hover:bg-orange-500/20 transition-all active:scale-95">LB + 4</button>
+                <button onClick={handleNoBall6} className="h-11 rounded-xl bg-rose-500/15 border border-rose-500/25 text-rose-300 font-black text-[10px] hover:bg-rose-500/25 transition-all active:scale-95">NB + 6</button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] text-slate-500 uppercase tracking-widest font-black block mb-3">Mixed Overthrows</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={handleByeOT} className="h-11 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-300 font-black text-[10px] hover:bg-teal-500/20 transition-all active:scale-95">Bye OT</button>
+                <button onClick={handleLegByeOT} className="h-11 rounded-xl bg-teal-500/15 border border-teal-500/25 text-teal-300 font-black text-[10px] hover:bg-teal-500/25 transition-all active:scale-95">LB OT</button>
+                <button onClick={handleWideOT} className="h-11 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 font-black text-[10px] hover:bg-violet-500/20 transition-all active:scale-95">Wd OT</button>
+                <button onClick={handleNoBallOT} className="h-11 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-300 font-black text-[10px] hover:bg-pink-500/20 transition-all active:scale-95">NB OT</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: Match Settings (Right) */}
+        <div className="glass rounded-2xl p-5 border border-white/10 relative overflow-hidden group h-full">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+              <Settings size={18} />
+            </div>
+            <div>
+              <h3 className="text-main font-display font-black text-lg tracking-tight">Match Control</h3>
+              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Configuration & Meta</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">PowerPlay</span>
                 <div className="flex gap-1">
                   {['P1', 'P2', 'P3'].map(p => (
                     <button
                       key={p}
                       onClick={() => emit('match:update', { field: 'powerplay', value: p })}
-                      className={`px-2 py-0.5 rounded text-[11px] font-black transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ${
                         (matchData.powerplay || 'P1') === p 
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                          : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                          ? 'bg-accent-primary text-main shadow-lg' 
+                          : 'bg-white/5 text-slate-500 hover:bg-white/10'
                       }`}
                     >
                       {p}
@@ -1132,180 +1418,105 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-lg border border-white/5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Overs</span>
-                <input 
-                  type="number"
-                  value={matchData.total_overs || '20'} 
-                  onChange={(e) => emit('match:update', { field: 'total_overs', value: e.target.value })}
-                  className="bg-transparent text-white text-xs font-bold outline-none w-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  min="1"
-                  max="100"
-                />
+
+              <div className="h-px bg-white/5" />
+
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Overs Limit</span>
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                  <input 
+                    type="number"
+                    value={matchData.total_overs || '20'} 
+                    onChange={(e) => emit('match:update', { field: 'total_overs', value: e.target.value })}
+                    className="bg-transparent text-main text-sm font-black outline-none w-10 text-center"
+                  />
+                  <span className="text-[8px] text-slate-500 font-bold">OVS</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-lg border border-white/5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Wickets</span>
-                <input 
-                  type="number"
-                  value={matchData.total_wickets || '10'} 
-                  onChange={(e) => emit('match:update', { field: 'total_wickets', value: e.target.value })}
-                  className="bg-transparent text-white text-xs font-bold outline-none w-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  min="1"
-                  max="20"
-                />
+
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Wickets Limit</span>
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                  <input 
+                    type="number"
+                    value={matchData.total_wickets || '10'} 
+                    onChange={(e) => emit('match:update', { field: 'total_wickets', value: e.target.value })}
+                    className="bg-transparent text-main text-sm font-black outline-none w-10 text-center"
+                  />
+                  <span className="text-[8px] text-slate-500 font-bold">WKT</span>
+                </div>
               </div>
-              <button 
-                onClick={() => emit('match:update', { field: 'show_scoreboard', value: matchData.show_scoreboard === 'false' ? 'true' : 'false' })}
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all ${
-                  matchData.show_scoreboard !== 'false' 
-                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-lg shadow-blue-500/10' 
-                    : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                <Eye size={14} className={matchData.show_scoreboard !== 'false' ? 'animate-pulse' : ''} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Scoreboard</span>
-              </button>
-              <button 
-                onClick={() => emit('match:update', { field: 'show_partnership', value: matchData.show_partnership === 'true' ? 'false' : 'true' })}
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all ${
-                  matchData.show_partnership === 'true' 
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/10' 
-                    : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                <ArrowLeftRight size={14} className={matchData.show_partnership === 'true' ? 'animate-pulse' : ''} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Partnership</span>
-              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => handleNewOver()}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all active:scale-95 group"
+                >
+                  <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">New Over</span>
+                </button>
+
+                {innings === 1 ? (
+                  <button 
+                    onClick={handleEndInnings}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all active:scale-95"
+                  >
+                    <Zap size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">End Innings</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleEndMatch}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500/20 transition-all active:scale-95"
+                  >
+                    <Trophy size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">End Match</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="h-px bg-white/5" />
+
+              <div className="space-y-3">
+                <button 
+                  onClick={() => emit('match:update', { field: 'show_scoreboard', value: matchData.show_scoreboard === 'false' ? 'true' : 'false' })}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+                    matchData.show_scoreboard !== 'false' 
+                      ? 'bg-accent-secondary/20 text-accent-secondary border-accent-secondary/40' 
+                      : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Eye size={16} className={matchData.show_scoreboard !== 'false' ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Scoreboard View</span>
+                  </div>
+                  <div className={`w-1.5 h-1.5 rounded-full ${matchData.show_scoreboard !== 'false' ? 'bg-accent-secondary shadow-[0_0_8px_var(--accent-secondary)]' : 'bg-slate-700'}`} />
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => { setShowCustomExtraModal(true); }}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    <Plus size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Extra</span>
+                  </button>
+
+                  <button 
+                    onClick={() => emit('match:update', { field: 'free_hit', value: matchData.free_hit === 'true' ? 'false' : 'true' })}
+                    className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${
+                      matchData.free_hit === 'true' ? 'bg-amber-500 text-black border-amber-500' : 'bg-amber-500/5 border-amber-500/20 text-amber-500/70 hover:bg-amber-500/10'
+                    }`}
+                  >
+                    <Zap size={14} className={matchData.free_hit === 'true' ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Free Hit</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-          <button onClick={() => addRuns(0)} className="btn btn-secondary py-3 text-base font-bold">Dot</button>
-          <button onClick={() => addRuns(1)} className="btn bg-white/10 text-white py-3 text-base font-bold hover:bg-white/15">+1</button>
-          <button onClick={() => addRuns(2)} className="btn bg-blue-500/20 text-blue-300 py-3 text-base font-bold hover:bg-blue-500/30">+2</button>
-          <button onClick={() => addRuns(3)} className="btn bg-blue-500/25 text-blue-300 py-3 text-base font-bold hover:bg-blue-500/35">+3</button>
-          <button onClick={() => addRuns(4)} className="btn bg-emerald-500/20 text-emerald-300 py-3 text-base font-bold hover:bg-emerald-500/30">+4</button>
-          <button onClick={() => addRuns(6)} className="btn bg-amber-500/20 text-amber-300 py-3 text-base font-bold hover:bg-amber-500/30">+6</button>
-          <button onClick={handleWide} className="btn bg-purple-500/20 text-purple-300 py-3 text-sm font-bold hover:bg-purple-500/30">Wide</button>
-          <button onClick={handleNoBall} className="btn bg-pink-500/20 text-pink-300 py-3 text-sm font-bold hover:bg-pink-500/30">No Ball</button>
-          <button onClick={handleWide4} className="btn bg-purple-500/30 text-purple-200 py-3 text-xs font-bold hover:bg-purple-500/40">Wd 4</button>
-          <button onClick={handleNoBall4} className="btn bg-pink-500/30 text-pink-200 py-3 text-xs font-bold hover:bg-pink-500/40">NB 4</button>
-          <button onClick={handleLegBye4} className="btn bg-orange-500/20 text-orange-300 py-3 text-xs font-bold hover:bg-orange-500/30">LB 4</button>
-          <button onClick={handleNoBall6} className="btn bg-rose-500/20 text-rose-300 py-3 text-xs font-bold hover:bg-rose-500/30">NB 6</button>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          <button onClick={handleWicket} className="btn btn-danger py-3 text-base font-bold">🏏 Wicket</button>
-          <button onClick={swapStrikers} className="btn btn-secondary py-3 text-sm font-bold flex items-center gap-1.5">
-            <ArrowLeftRight size={16} /> Swap Strikers
-          </button>
-        </div>
-        <button onClick={handleUndo} className="btn bg-white/5 text-slate-400 w-full mt-2 py-2 text-xs font-bold flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-all uppercase tracking-widest">
-          <Undo2 size={14} /> Undo Last Ball
-        </button>
-      </div>
-
-      {/* ═══════ Overthrow & Extras Section ═══════ */}
-      <div className="glass rounded-xl p-5 border border-cyan-500/20 bg-cyan-500/5">
-        <h3 className="text-cyan-400 font-bold flex items-center gap-2 mb-4">
-          <Zap size={18} />
-          Overthrows & Extras
-        </h3>
-        
-        {/* Quick Overthrow Buttons */}
-        <div className="mb-3">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Quick Overthrow (Off the bat)</span>
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={handleOT1} className="btn bg-cyan-500/15 text-cyan-300 py-2.5 text-sm font-bold hover:bg-cyan-500/25 border border-cyan-500/10 transition-all">
-              OT +1
-            </button>
-            <button onClick={handleOT2} className="btn bg-cyan-500/20 text-cyan-300 py-2.5 text-sm font-bold hover:bg-cyan-500/30 border border-cyan-500/10 transition-all">
-              OT +2
-            </button>
-            <button onClick={handleOT4} className="btn bg-cyan-500/30 text-cyan-200 py-2.5 text-sm font-bold hover:bg-cyan-500/40 border border-cyan-500/15 transition-all">
-              OT 🏏4
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Byes & Leg Byes</span>
-          <div className="grid grid-cols-4 gap-2">
-            <button onClick={() => handleBye(1)} className="btn bg-indigo-500/15 text-indigo-300 py-2.5 text-xs font-bold hover:bg-indigo-500/25 border border-indigo-500/10 transition-all">
-              B 1
-            </button>
-            <button onClick={() => handleBye(4)} className="btn bg-indigo-500/20 text-indigo-300 py-2.5 text-xs font-bold hover:bg-indigo-500/30 border border-indigo-500/10 transition-all">
-              B 4
-            </button>
-            <button onClick={() => handleLegBye(1)} className="btn bg-orange-500/15 text-orange-300 py-2.5 text-xs font-bold hover:bg-orange-500/25 border border-orange-500/10 transition-all">
-              LB 1
-            </button>
-            <button onClick={() => handleLegBye(4)} className="btn bg-orange-500/20 text-orange-300 py-2.5 text-xs font-bold hover:bg-orange-500/30 border border-orange-500/10 transition-all">
-              LB 4
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Extras + Overthrow</span>
-          <div className="grid grid-cols-4 gap-2">
-            <button onClick={handleByeOT} className="btn bg-teal-500/15 text-teal-300 py-2.5 text-xs font-bold hover:bg-teal-500/25 border border-teal-500/10 transition-all">
-              Bye OT
-            </button>
-            <button onClick={handleLegByeOT} className="btn bg-teal-500/20 text-teal-300 py-2.5 text-xs font-bold hover:bg-teal-500/30 border border-teal-500/10 transition-all">
-              LB OT
-            </button>
-            <button onClick={handleWideOT} className="btn bg-violet-500/15 text-violet-300 py-2.5 text-xs font-bold hover:bg-violet-500/25 border border-violet-500/10 transition-all">
-              Wd OT
-            </button>
-            <button onClick={handleNoBallOT} className="btn bg-pink-500/15 text-pink-300 py-2.5 text-xs font-bold hover:bg-pink-500/25 border border-pink-500/10 transition-all">
-              NB OT
-            </button>
-          </div>
-        </div>
-        <div className="mb-3">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Custom Extras</span>
-          <div className="grid grid-cols-4 gap-2">
-            <button onClick={() => { setCustomExtraConfig({ type: 'wide', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-purple-500/15 text-purple-300 py-2.5 text-[10px] font-bold hover:bg-purple-500/25 border border-purple-500/10 transition-all flex items-center justify-center gap-1">
-              <Plus size={12} /> Custom Wide
-            </button>
-            <button onClick={() => { setCustomExtraConfig({ type: 'noball', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-pink-500/15 text-pink-300 py-2.5 text-[10px] font-bold hover:bg-pink-500/25 border border-pink-500/10 transition-all flex items-center justify-center gap-1">
-              <Plus size={12} /> Custom NB
-            </button>
-            <button onClick={() => { setCustomExtraConfig({ type: 'bye', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-indigo-500/15 text-indigo-300 py-2.5 text-[10px] font-bold hover:bg-indigo-500/25 border border-indigo-500/10 transition-all flex items-center justify-center gap-1">
-              <Plus size={12} /> Custom Bye
-            </button>
-            <button onClick={() => { setCustomExtraConfig({ type: 'legbye', runs: 0, isOffBat: false }); setShowCustomExtraModal(true); }} className="btn bg-orange-500/15 text-orange-300 py-2.5 text-[10px] font-bold hover:bg-orange-500/25 border border-orange-500/10 transition-all flex items-center justify-center gap-1">
-              <Plus size={12} /> Custom LB
-            </button>
-          </div>
-        </div>
-
-        {/* Free Hit Toggle */}
-        <div className="mt-3 flex items-center justify-between bg-amber-500/5 border border-amber-500/20 rounded-lg p-2.5">
-          <div className="flex items-center gap-2">
-            <Zap size={16} className={matchData.free_hit === 'true' ? "text-amber-400 animate-pulse" : "text-slate-600"} />
-            <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Status</span>
-              <span className={`text-xs font-black uppercase ${matchData.free_hit === 'true' ? "text-amber-400" : "text-slate-500"}`}>
-                {matchData.free_hit === 'true' ? "Free Hit Active" : "Normal Delivery"}
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={() => emit('match:update', { field: 'free_hit', value: matchData.free_hit === 'true' ? 'false' : 'true' })}
-            className={`px-4 py-1.5 rounded-md text-[10px] font-bold border transition-all ${
-              matchData.free_hit === 'true' 
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30" 
-                : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
-            }`}
-          >
-            {matchData.free_hit === 'true' ? "Cancel Free Hit" : "Trigger Free Hit"}
-          </button>
-        </div>
-
-        <div className="bg-cyan-500/5 border border-cyan-500/10 rounded-lg p-2.5 mt-3">
-          <p className="text-[10px] text-cyan-200/50 leading-relaxed italic">
-            <strong>Tip:</strong> Quick buttons assume 0 runs before throw + overthrow runs. Use <strong>Custom OT</strong> for complex scenarios like "batsman hit 2, then overthrow boundary" (= 6 to batsman).
-          </p>
         </div>
       </div>
 
@@ -1314,11 +1525,11 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowOTModal(false)}>
           <div className="glass rounded-2xl p-6 w-full max-w-md border border-cyan-500/20 shadow-2xl shadow-cyan-500/10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              <h3 className="text-main font-display font-black text-xl flex items-center gap-2">
                 <Zap size={20} className="text-cyan-400" />
                 Custom Overthrow
               </h3>
-              <button onClick={() => setShowOTModal(false)} className="text-slate-500 hover:text-white transition-colors">
+              <button onClick={() => setShowOTModal(false)} className="text-slate-500 hover:text-main transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -1340,7 +1551,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                     className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
                       otConfig.deliveryType === opt.value
                         ? opt.activeClass
-                        : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                        : 'bg-sec text-slate-500 border-main hover:bg-white/5 hover:text-main'
                     }`}
                   >
                     {opt.label}
@@ -1354,12 +1565,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <label className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-2">Runs Before Throw</label>
               <div className="flex items-center gap-3">
                 <button onClick={() => setOtConfig(c => ({ ...c, initialRuns: Math.max(0, c.initialRuns - 1) }))}
-                  className="w-10 h-10 rounded-lg bg-white/5 text-white flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                  className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-primary hover:text-main border border-main transition-all">
                   <Minus size={16} />
                 </button>
-                <span className="text-white text-2xl font-display font-black w-12 text-center">{otConfig.initialRuns}</span>
+                <span className="text-main text-2xl font-display font-black w-12 text-center">{otConfig.initialRuns}</span>
                 <button onClick={() => setOtConfig(c => ({ ...c, initialRuns: c.initialRuns + 1 }))}
-                  className="w-10 h-10 rounded-lg bg-white/5 text-white flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                  className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-primary hover:text-main border border-main transition-all">
                   <Plus size={16} />
                 </button>
                 <div className="flex gap-1.5 ml-auto">
@@ -1382,7 +1593,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <button
                   onClick={() => setOtConfig(c => ({ ...c, isBoundary: false }))}
                   className={`py-2.5 rounded-lg text-sm font-bold border transition-all ${
-                    !otConfig.isBoundary ? 'bg-slate-600/30 text-white border-slate-400/30' : 'bg-white/5 text-slate-500 border-white/5'
+                    !otConfig.isBoundary ? 'bg-slate-600/30 text-main border-slate-400/30' : 'bg-white/5 text-slate-500 border-white/5'
                   }`}>
                   No (kept running)
                 </button>
@@ -1402,12 +1613,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <label className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-2">Runs After Throw (Overthrow Runs)</label>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setOtConfig(c => ({ ...c, additionalRuns: Math.max(0, c.additionalRuns - 1) }))}
-                    className="w-10 h-10 rounded-lg bg-white/5 text-white flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                    className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-secondary hover:text-main border border-main transition-all">
                     <Minus size={16} />
                   </button>
-                  <span className="text-white text-2xl font-display font-black w-12 text-center">{otConfig.additionalRuns}</span>
+                  <span className="text-main text-2xl font-display font-black w-12 text-center">{otConfig.additionalRuns}</span>
                   <button onClick={() => setOtConfig(c => ({ ...c, additionalRuns: c.additionalRuns + 1 }))}
-                    className="w-10 h-10 rounded-lg bg-white/5 text-white flex items-center justify-center hover:bg-white/10 border border-white/10 transition-all">
+                  className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-secondary hover:text-main border border-main transition-all">
                     <Plus size={16} />
                   </button>
                   <div className="flex gap-1.5 ml-auto">
@@ -1437,7 +1648,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 text-xs">Initial runs</span>
-                      <span className="text-white text-sm font-mono font-bold">{otConfig.initialRuns}</span>
+                      <span className="text-main text-sm font-mono font-black">{otConfig.initialRuns}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 text-xs">Overthrow runs</span>
@@ -1450,9 +1661,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                       </div>
                     )}
                     <div className="h-px bg-white/10 my-1" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-white text-sm font-bold">Total to team</span>
-                      <span className="text-emerald-400 text-lg font-display font-black">{total}</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
+                      <span className="text-main text-sm font-black uppercase tracking-wider">Total to team</span>
+                      <span className="text-accent-primary text-xl font-display font-black">{total} Runs</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 text-[10px]">Credited to</span>
@@ -1472,7 +1683,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 Cancel
               </button>
               <button onClick={handleCustomOverthrow}
-                className="btn bg-gradient-to-r from-cyan-500 to-emerald-500 text-white py-3 text-sm font-bold hover:from-cyan-600 hover:to-emerald-600 transition-all shadow-lg shadow-cyan-500/20">
+                className="btn bg-gradient-to-r from-cyan-500 to-emerald-500 text-main py-3 text-sm font-bold hover:from-cyan-600 hover:to-emerald-600 transition-all shadow-lg shadow-cyan-500/20">
                 Apply Overthrow
               </button>
             </div>
@@ -1569,7 +1780,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 Cancel
               </button>
               <button onClick={handleRunOutSubmit}
-                className="btn bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 text-sm font-bold hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg shadow-pink-500/20">
+                className="btn bg-gradient-to-r from-pink-500 to-rose-500 text-main py-3 text-sm font-bold hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg shadow-pink-500/20">
                 Confirm Run Out
               </button>
             </div>
@@ -1685,7 +1896,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 addRuns(totalRuns, isLegal, isExtra, label, type, offBatRuns); 
                 setShowCustomExtraModal(false); 
               }}
-                className="btn bg-gradient-to-r from-indigo-500 to-violet-500 text-white py-3 text-sm font-bold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/20">
+                className="btn bg-gradient-to-r from-indigo-500 to-violet-500 text-main py-3 text-sm font-bold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/20">
                 Add Extra
               </button>
             </div>
@@ -1693,161 +1904,11 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         </div>
       )}
 
-      {/* Match Controls */}
-      <div className="glass rounded-xl p-5 border border-main">
-        <h4 className="text-main font-semibold text-sm mb-3">Match Controls</h4>
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={handleNewOver} className="btn btn-secondary py-2.5 text-sm">New Over</button>
-          {innings === 1 ? (
-            <button onClick={handleEndInnings} className="btn bg-amber-500/20 text-amber-600 py-2.5 text-sm hover:bg-amber-500/30">End Innings</button>
-          ) : (
-            <button onClick={handleEndMatch} className="btn bg-blue-500/20 text-blue-600 py-2.5 text-sm hover:bg-blue-500/30">End Match</button>
-          )}
-        </div>
-        <div className="mt-3">
-          <EditableField label="Match Status" field="match_status" wide />
-        </div>
-      </div>
 
-      {/* Live Batting Stats */}
-      <div className="glass rounded-xl p-5 border border-main">
-        <h4 className="text-main font-semibold text-sm mb-4 flex items-center gap-2">
-          <Users size={16} className="text-emerald-400" />
-          Live Batting Stats (Innings {innings})
-        </h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-main">
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider">Batsman</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">R</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">B</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">SR</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-main">
-              {(() => {
-                const history = JSON.parse(matchData.batters_history || '{}');
-                
-                // Combine history with current active batters
-                const allBatters = { ...history };
-                if (matchData.striker_name) {
-                  allBatters[matchData.striker_name] = {
-                    runs: parseInt(matchData.striker_runs || '0'),
-                    balls: parseInt(matchData.striker_balls || '0'),
-                    isOut: false
-                  };
-                }
-                if (matchData.non_striker_name) {
-                  allBatters[matchData.non_striker_name] = {
-                    runs: parseInt(matchData.non_striker_runs || '0'),
-                    balls: parseInt(matchData.non_striker_balls || '0'),
-                    isOut: false
-                  };
-                }
-
-                const entries = Object.entries(allBatters);
-                if (entries.length === 0) {
-                  return <tr><td colSpan="5" className="py-4 text-center text-slate-500 italic">No batting data yet.</td></tr>;
-                }
-
-                return entries.map(([name, stats]) => {
-                  const sr = stats.balls > 0 ? ((stats.runs / stats.balls) * 100).toFixed(1) : '0.0';
-                  const isStriker = name === matchData.striker_name;
-                  const isNonStriker = name === matchData.non_striker_name;
-                  const isActive = isStriker || isNonStriker;
-
-                  return (
-                    <tr key={name} className={`${isActive ? 'bg-emerald-500/5' : ''}`}>
-                      <td className="py-2.5 font-bold text-main flex items-center gap-2">
-                        {name}
-                        {isStriker && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Striker" />}
-                        {isNonStriker && <div className="w-1 h-1 rounded-full bg-slate-500" title="Non-Striker" />}
-                      </td>
-                      <td className="py-2.5 text-center font-mono text-main">{stats.runs}</td>
-                      <td className="py-2.5 text-center font-mono text-main">{stats.balls}</td>
-                      <td className="py-2.5 text-center font-mono text-slate-500">{sr}</td>
-                      <td className="py-2.5 text-center">
-                        {stats.isOut ? (
-                          <span className="text-red-400/80 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] font-bold">OUT</span>
-                        ) : (
-                          <span className="text-emerald-400/80 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold">NOT OUT</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                });
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Live Bowler Stats */}
-      <div className="glass rounded-xl p-5 border border-main">
-        <h4 className="text-main font-semibold text-sm mb-4 flex items-center gap-2">
-          <Wind size={16} className="text-violet-400" />
-          Live Bowler Stats (Innings {innings})
-        </h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-main">
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider">Bowler</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">O</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">R</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">W</th>
-                <th className="py-2 text-slate-500 font-bold uppercase tracking-wider text-center">Econ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-main">
-              {(() => {
-                const history = JSON.parse(matchData.bowlers_history || '{}');
-                const bowlerEntries = Object.entries(history);
-                
-                if (bowlerEntries.length === 0 && !matchData.bowler_name) {
-                  return <tr><td colSpan="5" className="py-4 text-center text-slate-500 italic">No bowling data yet.</td></tr>;
-                }
-
-                // Combine history with current active bowler if not in history yet
-                const allBowlers = { ...history };
-                if (matchData.bowler_name) {
-                  allBowlers[matchData.bowler_name] = {
-                    runs: parseInt(matchData.bowler_runs || '0'),
-                    wickets: parseInt(matchData.bowler_wickets || '0'),
-                    overs: matchData.bowler_overs || '0.0'
-                  };
-                }
-
-                return Object.entries(allBowlers).map(([name, stats]) => {
-                  const [o, b] = stats.overs.split('.').map(n => parseInt(n) || 0);
-                  const totalOversDec = o + (b / 6);
-                  const econ = totalOversDec > 0 ? (stats.runs / totalOversDec).toFixed(2) : '0.00';
-                  const isActive = name === matchData.bowler_name;
-
-                  return (
-                    <tr key={name} className={`${isActive ? 'bg-violet-500/5' : ''}`}>
-                      <td className="py-2.5 font-bold text-main flex items-center gap-2">
-                        {name}
-                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />}
-                      </td>
-                      <td className="py-2.5 text-center font-mono text-main">{stats.overs}</td>
-                      <td className="py-2.5 text-center font-mono text-main">{stats.runs}</td>
-                      <td className="py-2.5 text-center font-mono font-bold text-emerald-500">{stats.wickets}</td>
-                      <td className="py-2.5 text-center font-mono text-slate-500">{econ}</td>
-                    </tr>
-                  );
-                });
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {/* Advanced Overlay */}
       <div className="glass rounded-xl overflow-hidden">
-        <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full px-5 py-3 flex items-center justify-between text-white hover:bg-white/5 transition-colors">
+        <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full px-5 py-3 flex items-center justify-between text-main font-black uppercase tracking-widest hover:bg-white/5 transition-colors">
           <span className="text-sm font-semibold">Advanced / Manual Override</span>
           {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
@@ -1862,107 +1923,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
             <EditableField label="Innings" field="innings" />
             <EditableField label="Target" field="target" />
             <div className="col-span-2 mt-2">
-              <button onClick={() => { if (confirm('Reset all match data?')) emit('match:reset'); }} className="btn btn-danger w-full py-2.5 flex items-center gap-2 justify-center bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white">
+              <button onClick={() => { if (confirm('Reset all match data?')) emit('match:reset'); }} className="btn btn-danger w-full py-2.5 flex items-center gap-2 justify-center bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-main">
                 <RotateCcw size={16} /> Reset Match
               </button>
             </div>
           </div>
         )}
-      </div>
-      {/* Manual Score Correction */}
-      <div className="glass rounded-xl p-5 border border-amber-500/30 bg-amber-500/5 mt-6">
-        <h3 className="text-amber-400 font-bold flex items-center gap-2 mb-4">
-          <Settings size={18} />
-          Manual Score Correction (Override)
-        </h3>
-        
-        <div className="space-y-6">
-          {/* Team Score Correction */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Runs</label>
-              <input type="number" value={matchData.runs || 0} 
-                onChange={(e) => emit('match:update', { field: 'runs', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Wickets</label>
-              <input type="number" value={matchData.wickets || 0} 
-                onChange={(e) => emit('match:update', { field: 'wickets', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Overs</label>
-              <input type="number" value={matchData.overs || 0} 
-                onChange={(e) => emit('match:update', { field: 'overs', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Balls</label>
-              <input type="number" value={matchData.balls || 0} 
-                onChange={(e) => emit('match:update', { field: 'balls', value: parseInt(e.target.value) || 0 })}
-                className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-sm outline-none focus:border-amber-500/50" 
-                min="0" max="5" />
-            </div>
-          </div>
-
-          <div className="h-px bg-white/5" />
-
-          {/* Player Stats Correction */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-2">
-                <Users size={14} className="text-emerald-400" /> Striker Stats
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500">Runs</label>
-                  <input type="number" value={matchData.striker_runs || 0} 
-                    onChange={(e) => emit('match:update', { field: 'striker_runs', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500">Balls</label>
-                  <input type="number" value={matchData.striker_balls || 0} 
-                    onChange={(e) => emit('match:update', { field: 'striker_balls', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-2">
-                <Wind size={14} className="text-amber-400" /> Bowler Stats
-              </h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500">Runs</label>
-                  <input type="number" value={matchData.bowler_runs || 0} 
-                    onChange={(e) => emit('match:update', { field: 'bowler_runs', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500">Wickets</label>
-                  <input type="number" value={matchData.bowler_wickets || 0} 
-                    onChange={(e) => emit('match:update', { field: 'bowler_wickets', value: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500">Overs (ex: 2.3)</label>
-                  <input type="text" value={matchData.bowler_overs || '0'} 
-                    onChange={(e) => emit('match:update', { field: 'bowler_overs', value: e.target.value })}
-                    className="w-full bg-sec border border-main rounded-lg px-3 py-2 text-main font-mono text-xs" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-            <p className="text-[10px] text-amber-200/60 leading-relaxed italic">
-              <strong>Note:</strong> Manual corrections update the scoreboard immediately but do not affect the ball-by-ball history log. Use this for quick fixes if a ball was recorded incorrectly.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
