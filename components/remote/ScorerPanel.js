@@ -268,7 +268,8 @@ export default function ScorerPanel({ matchData, emit, teams = [] }) {
 
     const ballObj = {
       label: ballLabel, run: runsToAdd, extra: isExtra, wicket: false,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
@@ -326,7 +327,7 @@ export default function ScorerPanel({ matchData, emit, teams = [] }) {
       { field: 'wicket_card_at', value: Date.now().toString() }
     );
 
-    const ballObj = { label: 'W', run: 0, extra: false, wicket: true, striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString() };
+    const ballObj = { label: 'W', run: 0, extra: false, wicket: true, striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(), innings: parseInt(matchData.innings || '1') };
     emit('match:recordBall', { updates, ball: ballObj });
   }
 
@@ -360,7 +361,7 @@ export default function ScorerPanel({ matchData, emit, teams = [] }) {
     
     const prefixMap = { normal: '', wide: 'Wd', noball: 'NB', bye: 'B', legbye: 'LB' };
     const label = `${prefixMap[deliveryType]}${totalRunsFromDelivery}+OT${isBoundary ? '4' : ''}`;
-    const ballObj = { label, run: totalTeamRuns, extra: !isLegal, wicket: false, striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString() };
+    const ballObj = { label, run: totalTeamRuns, extra: !isLegal, wicket: false, striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(), innings: parseInt(matchData.innings || '1') };
     emit('match:recordBall', { updates, ball: ballObj });
   }
 

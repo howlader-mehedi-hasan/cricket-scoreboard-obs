@@ -180,6 +180,169 @@ export default function MatchHistory({ matchData }) {
                 </div>
               </div>
            </div>
+
+           {/* Live Ball-by-Ball Tracker */}
+           <div className="space-y-4 pt-4 border-t border-white/5">
+             <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-400 border border-pink-500/20">
+                 <History size={16} />
+               </div>
+               <div>
+                 <h4 className="text-main font-display font-black text-lg tracking-tight uppercase">Live Ball-by-Ball Tracker</h4>
+                 <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Real-time Delivery Timeline</p>
+               </div>
+             </div>
+
+              {(() => {
+                let ballLog = [];
+                try {
+                  ballLog = JSON.parse(matchData.ball_log || '[]');
+                  if (ballLog.length === 0) {
+                    ballLog = JSON.parse(matchData.recent_balls || '[]');
+                  }
+                } catch (e) {
+                  ballLog = [];
+                }
+
+                if (ballLog.length === 0) {
+                  return (
+                    <div className="glass rounded-2xl p-6 text-center border border-white/10">
+                      <p className="text-slate-500 text-xs italic font-bold uppercase tracking-wider">No deliveries recorded in this match yet.</p>
+                    </div>
+                  );
+                }
+
+                // Split ballLog into innings
+                const isSecondInnings = parseInt(matchData.innings || '1') === 2;
+                const [o, b] = String(matchData.first_innings_overs || '0.0').split('.').map(n => parseInt(n) || 0);
+                const firstInningsBallCount = o * 6 + b;
+
+               // Innings 1 Balls
+               const innings1Balls = !isSecondInnings 
+                 ? ballLog 
+                 : ballLog.slice(0, firstInningsBallCount);
+
+               // Innings 2 Balls
+               const innings2Balls = !isSecondInnings 
+                 ? [] 
+                 : ballLog.slice(firstInningsBallCount);
+
+               const innings1Team = isSecondInnings
+                 ? (matchData.batting_team === 'team1' ? matchData.team2_name : matchData.team1_name)
+                 : (matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name);
+
+               const innings2Team = isSecondInnings
+                 ? (matchData.batting_team === 'team1' ? matchData.team1_name : matchData.team2_name)
+                 : '';
+
+               const groupBallsIntoOvers = (balls) => {
+                 const oversList = [];
+                 let currentOverBalls = [];
+                 let legalBallsInCurrentOver = 0;
+                 let overIndex = 0;
+
+                 balls.forEach((ball) => {
+                   currentOverBalls.push(ball);
+                   const isWide = ball.label?.toLowerCase().includes('wd') || ball.deliveryType === 'wide' || (ball.extra && ball.label === 'Wd');
+                   const isNoBall = ball.label?.toLowerCase().includes('nb') || ball.deliveryType === 'noball' || (ball.extra && ball.label === 'Nb');
+                   const isLegal = !isWide && !isNoBall;
+
+                   if (isLegal) {
+                     legalBallsInCurrentOver++;
+                   }
+
+                   if (legalBallsInCurrentOver === 6) {
+                     oversList.push({
+                       overNum: overIndex + 1,
+                       balls: currentOverBalls
+                     });
+                     currentOverBalls = [];
+                     legalBallsInCurrentOver = 0;
+                     overIndex++;
+                   }
+                 });
+
+                 if (currentOverBalls.length > 0) {
+                   oversList.push({
+                     overNum: overIndex + 1,
+                     balls: currentOverBalls,
+                     isPartial: true
+                   });
+                 }
+
+                 return oversList;
+               };
+
+               const renderInningsTracker = (balls, inningsNum, teamName) => {
+                 if (balls.length === 0) return null;
+                 const oversGrouped = groupBallsIntoOvers(balls);
+
+                 return (
+                   <div className="glass rounded-2xl p-5 border border-white/10 space-y-4 bg-black/10">
+                     <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                       <h5 className="text-main font-display font-black text-sm flex items-center gap-2">
+                         <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-pulse" />
+                         Innings {inningsNum}: {teamName || `Team ${inningsNum}`}
+                       </h5>
+                       <span className="text-[9px] font-black uppercase text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20">
+                         {balls.length} Balls Bowled
+                       </span>
+                     </div>
+
+                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                       {oversGrouped.reverse().map((over, idx) => (
+                         <div key={idx} className="flex items-center gap-4 bg-black/20 rounded-xl p-3 border border-white/5 hover:border-pink-500/20 transition-all duration-300">
+                           <div className="w-20 flex flex-col">
+                             <span className="text-main font-display font-black text-xs">Over {over.overNum}</span>
+                             {over.isPartial ? (
+                               <span className="text-[7px] text-pink-400 font-black uppercase tracking-wider">Active Over</span>
+                             ) : (
+                               <span className="text-[7px] text-slate-500 font-black uppercase tracking-wider">Completed</span>
+                             )}
+                           </div>
+                           <div className="flex flex-wrap gap-2 flex-1">
+                             {over.balls.map((b, bIdx) => {
+                               const isWkt = b.wicket || b.label === 'W';
+                               const isSix = b.run >= 6 && !b.extra;
+                               const isFour = b.run >= 4 && b.run < 6 && !b.extra;
+                               return (
+                                 <div
+                                   key={bIdx}
+                                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-black border transition-all hover:scale-110 cursor-default shadow-md ${
+                                     isWkt
+                                       ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-600/20'
+                                       : isSix
+                                         ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-600/20'
+                                         : isFour
+                                           ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20'
+                                           : b.extra
+                                             ? 'bg-amber-600/20 text-amber-400 border-amber-500/30'
+                                             : 'bg-sec border-main text-slate-400'
+                                   }`}
+                                   title={`${b.striker || 'Unknown'} vs ${b.bowler || 'Unknown'} • Run: ${b.run} ${isWkt ? '(Wicket)' : ''}`}
+                                 >
+                                   {b.label}
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 );
+               };
+
+               return (
+                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                   {/* Innings 1 */}
+                   {renderInningsTracker(innings1Balls, 1, innings1Team)}
+                   {/* Innings 2 */}
+                   {renderInningsTracker(innings2Balls, 2, innings2Team)}
+                 </div>
+               );
+             })()}
+           </div>
            
            <div className="h-px bg-white/5" />
         </div>

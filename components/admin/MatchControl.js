@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus, Undo2, BarChart2, Settings, Users, Wind, Zap, AlertTriangle, X, Eye } from 'lucide-react';
+import { ArrowLeftRight, RotateCcw, ChevronDown, ChevronUp, Edit3, Plus, Minus, Undo2, BarChart2, Settings, Users, Wind, Zap, AlertTriangle, X, Eye, Skull, Trophy } from 'lucide-react';
 
 export default function MatchControl({ matchData, emit, teams = [] }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -36,7 +36,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     const sName = matchData.striker_name || '';
     const nsName = matchData.non_striker_name || '';
     const bName = matchData.bowler_name || '';
-    
+
     const bTeamId = matchData.batting_team === 'team2' ? matchData.team2_id : matchData.team1_id;
     const bwTeamId = matchData.batting_team === 'team2' ? matchData.team1_id : matchData.team2_id;
     const cBattingTeam = teams.find(t => t.id === bTeamId);
@@ -79,10 +79,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   // Identify teams and players
   const battingTeamId = matchData.batting_team === 'team2' ? matchData.team2_id : matchData.team1_id;
   const bowlingTeamId = matchData.batting_team === 'team2' ? matchData.team1_id : matchData.team2_id;
-  
+
   const currentBattingTeam = teams.find(t => t.id === battingTeamId);
   const currentBowlingTeam = teams.find(t => t.id === bowlingTeamId);
-  
+
   const battingPlayers = currentBattingTeam?.players || [];
   const bowlingPlayers = currentBowlingTeam?.players || [];
 
@@ -134,9 +134,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           onChange={(e) => {
             const val = e.target.value;
             if (val === 'custom') {
-               startEdit(field);
-               onSelect?.();
-               return;
+              startEdit(field);
+              onSelect?.();
+              return;
             }
             const updates = [];
             const batHistory = JSON.parse(matchData.batters_history || '{}');
@@ -173,9 +173,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
               // Load new batsman stats if exists
               const newStats = batHistory[val] || { runs: 0, balls: 0, isOut: false };
-              
+
               const selectedPlayer = players.find(p => p.name === val);
-              
+
               updates.push(
                 { field: field, value: val },
                 { field: field.replace('_name', '_runs'), value: newStats.runs },
@@ -203,7 +203,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
           <option value="custom">✎ Custom Entry...</option>
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400">
-           <ChevronDown size={16} />
+          <ChevronDown size={16} />
         </div>
       </div>
     </div>
@@ -213,7 +213,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   function addRuns(runsToAdd, isLegal = true, isExtra = false, customLabel = null, deliveryType = 'normal', runsOffBat = null) {
     const updates = [];
     updates.push({ field: 'runs', value: runs + runsToAdd });
-    
+
     // Partnership Logic
     const pRuns = parseInt(matchData.partnership_runs || '0');
     const pBalls = parseInt(matchData.partnership_balls || '0');
@@ -239,7 +239,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         newOvers += 1;
         newBalls = 0;
       }
-      
+
       updates.push({ field: 'balls', value: newBalls });
       updates.push({ field: 'overs', value: newOvers });
 
@@ -288,7 +288,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     let newNonStrikerName = matchData.non_striker_name;
 
     const isOverComplete = isLegal && (balls + 1 >= 6);
-    
+
     // Swap Logic for international rules
     let runsForSwap = runsToAdd;
     if (deliveryType === 'wide' || deliveryType === 'noball') {
@@ -338,7 +338,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
     const ballObj = {
       label: ballLabel, run: runsToAdd, extra: isExtra, wicket: false,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
@@ -381,7 +382,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     }
 
     const isOverComplete = (balls + 1 >= 6);
-    
+
     // Clear the current striker (they are out)
     // If it's NOT the end of the over, the new batsman will be the striker.
     // If it IS the end of the over, the non-striker will become the striker for the next over.
@@ -426,7 +427,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
     const ballObj = {
       label: 'W', run: 0, extra: false, wicket: true,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
@@ -448,14 +450,15 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     ];
     const ballObj = {
       label: 'NB4', run: 5, extra: true, wicket: false,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
     emit('match:recordBall', { updates, ball: ballObj });
   }
   function handleBye(runs) { addRuns(runs, true, true, `B${runs}`, 'bye'); }
   function handleLegBye(runs) { addRuns(runs, true, true, `LB${runs}`, 'legbye'); }
   function handleLegBye4() { addRuns(4, true, true, 'LB4', 'legbye'); }
-  function handleNoBall6() { 
+  function handleNoBall6() {
     const updates = [
       { field: 'runs', value: runs + 7 },
       { field: 'bowler_runs', value: bowlerRuns + 7 },
@@ -467,7 +470,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     ];
     const ballObj = {
       label: 'NB6', run: 7, extra: true, wicket: false,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
     emit('match:recordBall', { updates, ball: ballObj });
   }
@@ -486,14 +490,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
   function handleOverthrow(initialRuns, overthrowRuns, deliveryType = 'normal', isBoundary = false) {
     const actualOTRuns = isBoundary ? 4 : overthrowRuns;
     const totalRunsFromDelivery = initialRuns + actualOTRuns;
-    
+
     // Determine if ball is legal (Wides and No-balls are illegal deliveries)
     const isLegal = deliveryType !== 'wide' && deliveryType !== 'noball';
     const extraPenalty = (deliveryType === 'wide' || deliveryType === 'noball') ? 1 : 0;
-    
+
     // Total runs added to team score
     const totalTeamRuns = totalRunsFromDelivery + extraPenalty;
-    
+
     const updates = [];
     updates.push({ field: 'runs', value: runs + totalTeamRuns });
     updates.push({ field: 'partnership_runs', value: (parseInt(matchData.partnership_runs || '0') + totalTeamRuns) });
@@ -590,7 +594,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       deliveryType,
       isBoundaryOT: isBoundary,
       striker: strikerName, bowler: bowlerName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
@@ -642,7 +647,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     // Update bowler runs (always) and history
     const newBowlerRuns = bowlerRuns + totalTeamRuns;
     updates.push({ field: 'bowler_runs', value: newBowlerRuns });
-    
+
     if (matchData.bowler_name) {
       const history = JSON.parse(matchData.bowlers_history || '{}');
       history[matchData.bowler_name] = {
@@ -664,7 +669,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     if (deliveryType === 'normal' || deliveryType === 'noball') {
       sRuns += runsCompleted;
     }
-    
+
     const outName = playerOut === 'striker' ? sName : nsName;
     const isOdd = (runsCompleted % 2 === 1);
     const isOverComplete = isLegal && (balls + 1 >= 6);
@@ -674,12 +679,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     let finalOnTop = currentOnTop;
 
     if ((isOdd && !isOverComplete) || (!isOdd && isOverComplete)) {
-       finalSName = nsName; finalSRuns = nsRuns; finalSBalls = nsBalls;
-       finalNSName = sName; finalNSRuns = sRuns; finalNSBalls = sBalls;
-       finalOnTop = !currentOnTop;
+      finalSName = nsName; finalSRuns = nsRuns; finalSBalls = nsBalls;
+      finalNSName = sName; finalNSRuns = sRuns; finalNSBalls = sBalls;
+      finalOnTop = !currentOnTop;
     } else {
-       finalSName = sName; finalSRuns = sRuns; finalSBalls = sBalls;
-       finalNSName = nsName; finalNSRuns = nsRuns; finalNSBalls = nsBalls;
+      finalSName = sName; finalSRuns = sRuns; finalSBalls = sBalls;
+      finalNSName = nsName; finalNSRuns = nsRuns; finalNSBalls = nsBalls;
     }
 
     if (finalSName === outName) {
@@ -709,7 +714,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     const ballObj = {
       label: `${prefixMap[deliveryType]}${runsCompleted}+RO`,
       run: totalTeamRuns, extra: !isLegal, wicket: true,
-      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString()
+      striker: strikerName, bowler: bowlerName, timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
 
     emit('match:recordBall', { updates, ball: ballObj });
@@ -725,7 +731,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
       label: 'PEN+5', run: 5, extra: true, wicket: false,
       penalty: true,
       striker: strikerName, bowler: bowlerName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      innings: parseInt(matchData.innings || '1')
     };
     emit('match:recordBall', { updates, ball: ballObj });
   }
@@ -896,7 +903,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
   function handleEndMatch() {
     if (!confirm('Are you sure you want to end this match? This will save the final statistics.')) return;
-    
+
     const ballLog = JSON.parse(matchData.ball_log || '[]');
     const performances = { batsmen: {}, bowlers: {} };
 
@@ -935,14 +942,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
     const team1Name = matchData.team1_name || 'Team 1';
     const team2Name = matchData.team2_name || 'Team 2';
     const matchName = matchData.match_name || 'Match';
-    
+
     const battingFirstTeam = matchData.batting_team === 'team1' ? team2Name : team1Name; // If current is team1, then team2 was first
     const battingSecondTeam = matchData.batting_team === 'team1' ? team1Name : team2Name;
-    
+
     const score1 = parseInt(matchData.first_innings_total || '0');
     const score2 = runs;
     const targetVal = parseInt(matchData.target || '0');
-    
+
     let resultMessage = '';
     if (score2 >= targetVal) {
       const margin = 10 - wickets;
@@ -976,7 +983,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
         {/* Left Column: Score Display (Image 1 context) */}
         <div className="lg:col-span-12 xl:col-span-5 glass rounded-2xl p-4 md:p-6 relative overflow-hidden group flex flex-col justify-between">
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent-primary/10 rounded-full blur-3xl group-hover:bg-accent-primary/20 transition-all duration-700" />
-          
+
           <div className="flex flex-col gap-6 relative z-10 h-full">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
@@ -995,7 +1002,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-1.5 border border-white/5 backdrop-blur-sm">
                 <button onClick={() => handleManualBalls(-1)} className="p-1 hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors rounded-md">
                   <Minus size={14} />
@@ -1013,7 +1020,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
             <div className="flex flex-col sm:flex-row items-center gap-4 mt-auto">
               {/* Runs Control */}
               <div className="flex-1 w-full flex items-center justify-between bg-black/30 rounded-2xl border border-white/5 p-1.5 shadow-inner backdrop-blur-md">
-                <button 
+                <button
                   onClick={() => handleManualRuns(-1)}
                   className="w-10 h-12 md:w-12 md:h-14 flex items-center justify-center hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all rounded-xl"
                 >
@@ -1022,17 +1029,17 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <div className="text-main font-display font-black text-5xl md:text-7xl tabular-nums leading-none tracking-tighter">
                   {runs}
                 </div>
-                <button 
+                <button
                   onClick={() => handleManualRuns(1)}
                   className="w-10 h-12 md:w-12 md:h-14 flex items-center justify-center hover:bg-accent-primary/10 text-slate-500 hover:text-accent-primary transition-all rounded-xl"
                 >
                   <Plus size={18} />
                 </button>
               </div>
-              
+
               {/* Wickets Control */}
               <div className="flex items-center bg-black/30 rounded-2xl border border-white/5 p-1.5 shadow-inner backdrop-blur-md h-full">
-                <button 
+                <button
                   onClick={() => handleManualWickets(-1)}
                   className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all rounded-xl"
                 >
@@ -1041,7 +1048,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <div className="px-3 md:px-5 text-slate-500 text-3xl md:text-5xl font-black italic tabular-nums leading-none flex items-center">
                   <span className="text-xl md:text-2xl mr-0.5 opacity-50 not-italic">/</span>{wickets}
                 </div>
-                <button 
+                <button
                   onClick={() => handleManualWickets(1)}
                   className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center hover:bg-accent-primary/10 text-slate-500 hover:text-accent-primary transition-all rounded-xl"
                 >
@@ -1076,7 +1083,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Striker</span>
                 </div>
                 {matchData.striker_name && (
-                  <button 
+                  <button
                     onClick={() => setChangingStriker(!changingStriker)}
                     className="text-accent-primary hover:text-main transition-colors bg-accent-primary/10 p-1.5 rounded-lg border border-accent-primary/20"
                     title="Change Player"
@@ -1085,7 +1092,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </button>
                 )}
               </div>
-              
+
               <div className="relative z-10">
                 {(!matchData.striker_name || changingStriker) ? (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1093,41 +1100,41 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </div>
                 ) : (
                   <div className="flex items-start justify-between gap-4">
-                     <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-accent-primary font-mono font-black text-sm">{getJersey(matchData.striker_name, battingPlayers)}</span>
-                          <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.striker_name}</h4>
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-3">
-                            <span className="text-main font-display font-black text-2xl tabular-nums">{strikerRuns}</span>
-                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                              <button onClick={() => handleManualStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
-                                <Minus size={14} />
-                              </button>
-                              <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
-                              <button onClick={() => handleManualStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
-                                <Plus size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-slate-500 text-sm font-medium">({strikerBalls})</span>
-                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                              <button onClick={() => handleManualStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
-                                <Minus size={12} />
-                              </button>
-                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
-                              <button onClick={() => handleManualStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
-                                <Plus size={12} />
-                              </button>
-                            </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="striker-jersey text-accent-primary font-mono font-black text-sm">{getJersey(matchData.striker_name, battingPlayers)}</span>
+                        <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.striker_name}</h4>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-main font-display font-black text-2xl tabular-nums">{strikerRuns}</span>
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <button onClick={() => handleManualStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
+                              <Minus size={14} />
+                            </button>
+                            <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
+                              <Plus size={14} />
+                            </button>
                           </div>
                         </div>
-                     </div>
-                     <button onClick={() => emit('match:update', {field: 'striker_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
-                       <RotateCcw size={14}/>
-                     </button>
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-500 text-sm font-medium">({strikerBalls})</span>
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <button onClick={() => handleManualStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                              <Minus size={12} />
+                            </button>
+                            <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => emit('match:update', { field: 'striker_name', value: '' })} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
+                      <RotateCcw size={14} />
+                    </button>
                   </div>
                 )}
               </div>
@@ -1141,7 +1148,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Non-Striker</span>
                 </div>
                 {matchData.non_striker_name && (
-                  <button 
+                  <button
                     onClick={() => setChangingNonStriker(!changingNonStriker)}
                     className="text-slate-400 hover:text-main transition-colors bg-white/5 p-1.5 rounded-lg border border-white/10"
                     title="Change Player"
@@ -1150,7 +1157,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </button>
                 )}
               </div>
-              
+
               <div className="relative z-10">
                 {(!matchData.non_striker_name || changingNonStriker) ? (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1164,34 +1171,34 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                         <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.non_striker_name}</h4>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-3">
-                            <span className="text-main font-display font-black text-2xl tabular-nums">{matchData.non_striker_runs || 0}</span>
-                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                              <button onClick={() => handleManualNonStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
-                                <Minus size={14} />
-                              </button>
-                              <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
-                              <button onClick={() => handleManualNonStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
-                                <Plus size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-slate-500 text-sm font-medium">({matchData.non_striker_balls || 0})</span>
-                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                              <button onClick={() => handleManualNonStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
-                                <Minus size={12} />
-                              </button>
-                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
-                              <button onClick={() => handleManualNonStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
-                                <Plus size={12} />
-                              </button>
-                            </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-main font-display font-black text-2xl tabular-nums">{matchData.non_striker_runs || 0}</span>
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <button onClick={() => handleManualNonStrikerRuns(-1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all active:scale-90">
+                              <Minus size={14} />
+                            </button>
+                            <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualNonStrikerRuns(1)} className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all active:scale-90">
+                              <Plus size={14} />
+                            </button>
                           </div>
                         </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-500 text-sm font-medium">({matchData.non_striker_balls || 0})</span>
+                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                            <button onClick={() => handleManualNonStrikerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                              <Minus size={12} />
+                            </button>
+                            <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                            <button onClick={() => handleManualNonStrikerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all active:scale-90">
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <button onClick={() => emit('match:update', {field: 'non_striker_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
-                      <RotateCcw size={14}/>
+                    <button onClick={() => emit('match:update', { field: 'non_striker_name', value: '' })} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Player">
+                      <RotateCcw size={14} />
                     </button>
                   </div>
                 )}
@@ -1209,7 +1216,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">Current Bowler</span>
                 </div>
                 {matchData.bowler_name && (
-                  <button 
+                  <button
                     onClick={() => setChangingBowler(!changingBowler)}
                     className="text-accent-secondary hover:text-main transition-colors bg-accent-secondary/10 p-1.5 rounded-lg border border-accent-secondary/20"
                     title="Change Bowler"
@@ -1218,7 +1225,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </button>
                 )}
               </div>
-              
+
               <div className="relative z-10">
                 {(!matchData.bowler_name || changingBowler) ? (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1228,39 +1235,39 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-accent-secondary font-mono font-black text-sm">{getJersey(matchData.bowler_name, bowlingPlayers)}</span>
+                        <span className="bowler-jersey text-accent-secondary font-mono font-black text-sm">{getJersey(matchData.bowler_name, bowlingPlayers)}</span>
                         <h4 className="text-main font-bold text-lg leading-tight truncate">{matchData.bowler_name}</h4>
                       </div>
                       <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-main font-display font-black text-2xl tabular-nums">{bowlerWickets}/{bowlerRuns}</span>
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                            <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">W</span>
-                            <button onClick={() => handleManualBowlerWickets(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12}/></button>
-                            <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
-                            <button onClick={() => handleManualBowlerWickets(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12}/></button>
+                        <div className="flex items-center gap-3">
+                          <span className="text-main font-display font-black text-2xl tabular-nums">{bowlerWickets}/{bowlerRuns}</span>
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">W</span>
+                              <button onClick={() => handleManualBowlerWickets(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12} /></button>
+                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualBowlerWickets(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12} /></button>
+                            </div>
+                            <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
+                              <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">R</span>
+                              <button onClick={() => handleManualBowlerRuns(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12} /></button>
+                              <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
+                              <button onClick={() => handleManualBowlerRuns(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12} /></button>
+                            </div>
                           </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-500 text-sm font-medium">({bowlerOversVal})</span>
                           <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                            <span className="text-[8px] text-slate-500 font-bold uppercase w-4 text-center">R</span>
-                            <button onClick={() => handleManualBowlerRuns(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all"><Minus size={12}/></button>
+                            <button onClick={() => handleManualBowlerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Minus size={12} /></button>
                             <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
-                            <button onClick={() => handleManualBowlerRuns(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-accent-primary transition-all"><Plus size={12}/></button>
+                            <button onClick={() => handleManualBowlerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Plus size={12} /></button>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-500 text-sm font-medium">({bowlerOversVal})</span>
-                        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/10 rounded-lg p-0.5 border border-black/5 dark:border-white/5">
-                          <button onClick={() => handleManualBowlerBalls(-1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Minus size={12}/></button>
-                          <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
-              <button onClick={() => handleManualBowlerBalls(1)} className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-main transition-all"><Plus size={12}/></button>
-                        </div>
-                      </div>
                     </div>
-                    </div>
-                    <button onClick={() => emit('match:update', {field: 'bowler_name', value: ''})} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Bowler">
-                      <RotateCcw size={14}/>
+                    <button onClick={() => emit('match:update', { field: 'bowler_name', value: '' })} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Reset Bowler">
+                      <RotateCcw size={14} />
                     </button>
                   </div>
                 )}
@@ -1272,7 +1279,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
       {/* ═══════ Dashboard Control Cockpit ═══════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 relative z-10">
-        
+
         {/* Column 1: Action Center (Left) */}
         <div className="glass rounded-2xl p-5 border border-white/10 relative overflow-hidden group h-full">
           <div className="flex items-center gap-3 mb-6">
@@ -1292,8 +1299,11 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <span className="uppercase tracking-widest text-[9px] opacity-60">Dot</span>
               </button>
               <button onClick={() => addRuns(1)} className="h-14 rounded-xl bg-sec border border-main text-main font-display font-black text-2xl hover:bg-accent-secondary/5 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-sm">1</button>
-              <button onClick={() => addRuns(2)} className="h-14 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-accent-secondary font-display font-black text-2xl hover:bg-accent-secondary/10 hover:border-accent-secondary/40 transition-all active:scale-95 shadow-sm">2</button>
-              <button onClick={() => addRuns(3)} className="h-14 rounded-xl bg-accent-secondary/10 border border-accent-secondary/30 text-accent-secondary font-display font-black text-2xl hover:bg-accent-secondary/20 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-md">3</button>
+
+              <button onClick={() => addRuns(2)} className="h-14 rounded-xl bg-sec border border-main text-main font-display font-black text-2xl hover:bg-accent-secondary/5 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-sm">2</button>
+
+              <button onClick={() => addRuns(3)} className="h-14 rounded-xl bg-sec border border-main text-main font-display font-black text-2xl hover:bg-accent-secondary/5 hover:border-accent-secondary/50 transition-all active:scale-95 shadow-sm">3</button>
+
               <button onClick={() => addRuns(4)} className="h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-display font-black text-3xl hover:bg-emerald-500 hover:text-main transition-all active:scale-95 shadow-lg shadow-emerald-500/10">4</button>
               <button onClick={() => addRuns(6)} className="h-14 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-600 dark:text-violet-400 font-display font-black text-3xl hover:bg-violet-500 hover:text-main transition-all active:scale-95 shadow-lg shadow-violet-500/10">6</button>
             </div>
@@ -1303,10 +1313,16 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <button onClick={handleNoBall} className="h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 font-black text-[10px] uppercase tracking-wider hover:bg-pink-500/20 transition-all active:scale-95">No Ball</button>
             </div>
 
-            <button onClick={handleWicket} className="w-full h-14 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-main font-display font-black text-base hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all active:scale-95 flex items-center justify-center gap-3">
-              <Zap size={18} className="fill-current" />
-              WICKET
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={handleWicket} className="h-14 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-main font-display font-black text-xs hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2">
+                <Zap size={16} className="fill-current" />
+                WICKET
+              </button>
+              <button onClick={() => setShowRunOutModal(true)} className="h-14 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 text-main font-display font-black text-xs hover:shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2">
+                <Skull size={16} />
+                RUN OUT
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button onClick={swapStrikers} className="h-12 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-black text-[9px] uppercase tracking-wider hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-2">
@@ -1318,12 +1334,11 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 Undo
               </button>
             </div>
-            
-            <button onClick={() => emit('match:update', { field: 'show_partnership', value: matchData.show_partnership === 'true' ? 'false' : 'true' })} className={`w-full h-12 rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-2 ${
-               matchData.show_partnership === 'true' ? 'bg-accent-primary/10 border-accent-primary/30 text-accent-primary' : 'bg-white/5 border-white/10 text-slate-400'
-            }`}>
-               <Users size={14} />
-               <span className="text-[10px] font-black uppercase tracking-widest">Partnership View</span>
+
+            <button onClick={() => emit('match:update', { field: 'show_partnership', value: matchData.show_partnership === 'true' ? 'false' : 'true' })} className={`w-full h-12 rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-2 ${matchData.show_partnership === 'true' ? 'bg-accent-primary/10 border-accent-primary/30 text-accent-primary' : 'bg-white/5 border-white/10 text-slate-400'
+              }`}>
+              <Users size={14} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Partnership View</span>
             </button>
           </div>
         </div>
@@ -1407,11 +1422,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                     <button
                       key={p}
                       onClick={() => emit('match:update', { field: 'powerplay', value: p })}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ${
-                        (matchData.powerplay || 'P1') === p 
-                          ? 'bg-accent-primary text-main shadow-lg' 
-                          : 'bg-white/5 text-slate-500 hover:bg-white/10'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ${(matchData.powerplay || 'P1') === p
+                        ? 'bg-accent-primary text-main shadow-lg'
+                        : 'bg-white/5 text-slate-500 hover:bg-white/10'
+                        }`}
                     >
                       {p}
                     </button>
@@ -1424,9 +1438,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Overs Limit</span>
                 <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                  <input 
+                  <input
                     type="number"
-                    value={matchData.total_overs || '20'} 
+                    value={matchData.total_overs || '20'}
                     onChange={(e) => emit('match:update', { field: 'total_overs', value: e.target.value })}
                     className="bg-transparent text-main text-sm font-black outline-none w-10 text-center"
                   />
@@ -1437,9 +1451,9 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Wickets Limit</span>
                 <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                  <input 
+                  <input
                     type="number"
-                    value={matchData.total_wickets || '10'} 
+                    value={matchData.total_wickets || '10'}
                     onChange={(e) => emit('match:update', { field: 'total_wickets', value: e.target.value })}
                     className="bg-transparent text-main text-sm font-black outline-none w-10 text-center"
                   />
@@ -1450,7 +1464,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <button 
+                <button
                   onClick={() => handleNewOver()}
                   className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all active:scale-95 group"
                 >
@@ -1459,7 +1473,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 </button>
 
                 {innings === 1 ? (
-                  <button 
+                  <button
                     onClick={handleEndInnings}
                     className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all active:scale-95"
                   >
@@ -1467,7 +1481,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                     <span className="text-[10px] font-black uppercase tracking-widest">End Innings</span>
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={handleEndMatch}
                     className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500/20 transition-all active:scale-95"
                   >
@@ -1480,13 +1494,12 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <div className="h-px bg-white/5" />
 
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => emit('match:update', { field: 'show_scoreboard', value: matchData.show_scoreboard === 'false' ? 'true' : 'false' })}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-300 ${
-                    matchData.show_scoreboard !== 'false' 
-                      ? 'bg-accent-secondary/20 text-accent-secondary border-accent-secondary/40' 
-                      : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
-                  }`}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-300 ${matchData.show_scoreboard !== 'false'
+                    ? 'bg-accent-secondary/20 text-accent-secondary border-accent-secondary/40'
+                    : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Eye size={16} className={matchData.show_scoreboard !== 'false' ? 'animate-pulse' : ''} />
@@ -1496,7 +1509,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 </button>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <button 
+                  <button
                     onClick={() => { setShowCustomExtraModal(true); }}
                     className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all active:scale-95"
                   >
@@ -1504,11 +1517,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                     <span className="text-[10px] font-black uppercase tracking-widest">Extra</span>
                   </button>
 
-                  <button 
+                  <button
                     onClick={() => emit('match:update', { field: 'free_hit', value: matchData.free_hit === 'true' ? 'false' : 'true' })}
-                    className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${
-                      matchData.free_hit === 'true' ? 'bg-amber-500 text-black border-amber-500' : 'bg-amber-500/5 border-amber-500/20 text-amber-500/70 hover:bg-amber-500/10'
-                    }`}
+                    className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all active:scale-95 ${matchData.free_hit === 'true' ? 'bg-amber-500 text-black border-amber-500' : 'bg-amber-500/5 border-amber-500/20 text-amber-500/70 hover:bg-amber-500/10'
+                      }`}
                   >
                     <Zap size={14} className={matchData.free_hit === 'true' ? 'animate-pulse' : ''} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Free Hit</span>
@@ -1548,11 +1560,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <button
                     key={opt.value}
                     onClick={() => setOtConfig(c => ({ ...c, deliveryType: opt.value }))}
-                    className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
-                      otConfig.deliveryType === opt.value
-                        ? opt.activeClass
-                        : 'bg-sec text-slate-500 border-main hover:bg-white/5 hover:text-main'
-                    }`}
+                    className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${otConfig.deliveryType === opt.value
+                      ? opt.activeClass
+                      : 'bg-sec text-slate-500 border-main hover:bg-white/5 hover:text-main'
+                      }`}
                   >
                     {opt.label}
                   </button>
@@ -1576,9 +1587,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <div className="flex gap-1.5 ml-auto">
                   {[0, 1, 2, 3].map(n => (
                     <button key={n} onClick={() => setOtConfig(c => ({ ...c, initialRuns: n }))}
-                      className={`w-8 h-8 rounded text-xs font-bold transition-all ${
-                        otConfig.initialRuns === n ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
-                      }`}>
+                      className={`w-8 h-8 rounded text-xs font-bold transition-all ${otConfig.initialRuns === n ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                        }`}>
                       {n}
                     </button>
                   ))}
@@ -1592,16 +1602,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setOtConfig(c => ({ ...c, isBoundary: false }))}
-                  className={`py-2.5 rounded-lg text-sm font-bold border transition-all ${
-                    !otConfig.isBoundary ? 'bg-slate-600/30 text-main border-slate-400/30' : 'bg-white/5 text-slate-500 border-white/5'
-                  }`}>
+                  className={`py-2.5 rounded-lg text-sm font-bold border transition-all ${!otConfig.isBoundary ? 'bg-slate-600/30 text-main border-slate-400/30' : 'bg-white/5 text-slate-500 border-white/5'
+                    }`}>
                   No (kept running)
                 </button>
                 <button
                   onClick={() => setOtConfig(c => ({ ...c, isBoundary: true, additionalRuns: 0 }))}
-                  className={`py-2.5 rounded-lg text-sm font-bold border transition-all ${
-                    otConfig.isBoundary ? 'bg-emerald-500/30 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-slate-500 border-white/5'
-                  }`}>
+                  className={`py-2.5 rounded-lg text-sm font-bold border transition-all ${otConfig.isBoundary ? 'bg-emerald-500/30 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-slate-500 border-white/5'
+                    }`}>
                   Yes (+4 boundary)
                 </button>
               </div>
@@ -1618,15 +1626,14 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   </button>
                   <span className="text-main text-2xl font-display font-black w-12 text-center">{otConfig.additionalRuns}</span>
                   <button onClick={() => setOtConfig(c => ({ ...c, additionalRuns: c.additionalRuns + 1 }))}
-                  className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-secondary hover:text-main border border-main transition-all">
+                    className="w-10 h-10 rounded-lg bg-sec text-main flex items-center justify-center hover:bg-accent-secondary hover:text-main border border-main transition-all">
                     <Plus size={16} />
                   </button>
                   <div className="flex gap-1.5 ml-auto">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} onClick={() => setOtConfig(c => ({ ...c, additionalRuns: n }))}
-                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${
-                          otConfig.additionalRuns === n ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
-                        }`}>
+                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${otConfig.additionalRuns === n ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                          }`}>
                         {n}
                       </button>
                     ))}
@@ -1712,9 +1719,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <div className="grid grid-cols-3 gap-2">
                   {['normal', 'wide', 'noball'].map(type => (
                     <button key={type} onClick={() => setRunOutConfig(c => ({ ...c, deliveryType: type }))}
-                      className={`py-2 rounded-lg text-xs font-bold capitalize border transition-all ${
-                        runOutConfig.deliveryType === type ? 'bg-pink-500/20 text-pink-500 border-pink-500' : 'bg-white/5 text-slate-400 border-white/5'
-                      }`}>
+                      className={`py-2 rounded-lg text-xs font-bold capitalize border transition-all ${runOutConfig.deliveryType === type ? 'bg-pink-500/20 text-pink-500 border-pink-500' : 'bg-white/5 text-slate-400 border-white/5'
+                        }`}>
                       {type === 'normal' ? 'Legal Ball' : type}
                     </button>
                   ))}
@@ -1726,18 +1732,16 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 <label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-2">Who is Run Out?</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => setRunOutConfig(c => ({ ...c, playerOut: 'striker' }))}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      runOutConfig.playerOut === 'striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
-                    }`}>
+                    className={`p-4 rounded-xl border text-left transition-all ${runOutConfig.playerOut === 'striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
+                      }`}>
                     <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Striker</span>
                     <span className={`text-sm font-bold truncate block ${runOutConfig.playerOut === 'striker' ? 'text-pink-500' : 'text-main'}`}>
                       {strikerName || 'Batsman 1'}
                     </span>
                   </button>
                   <button onClick={() => setRunOutConfig(c => ({ ...c, playerOut: 'non-striker' }))}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      runOutConfig.playerOut === 'non-striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
-                    }`}>
+                    className={`p-4 rounded-xl border text-left transition-all ${runOutConfig.playerOut === 'non-striker' ? 'bg-pink-500/20 border-pink-500 shadow-lg shadow-pink-500/10' : 'bg-white/5 border-white/5'
+                      }`}>
                     <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Non-Striker</span>
                     <span className={`text-sm font-bold truncate block ${runOutConfig.playerOut === 'non-striker' ? 'text-pink-500' : 'text-main'}`}>
                       {matchData.non_striker_name || 'Batsman 2'}
@@ -1762,9 +1766,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <div className="flex gap-1.5 ml-auto">
                     {[0, 1, 2, 3].map(n => (
                       <button key={n} onClick={() => setRunOutConfig(c => ({ ...c, runsCompleted: n }))}
-                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${
-                          runOutConfig.runsCompleted === n ? 'bg-pink-500/30 text-pink-500 border border-pink-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
-                        }`}>
+                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${runOutConfig.runsCompleted === n ? 'bg-pink-500/30 text-pink-500 border border-pink-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                          }`}>
                         {n}
                       </button>
                     ))}
@@ -1814,11 +1817,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                     { id: 'legbye', label: 'LB', color: 'orange' }
                   ].map(t => (
                     <button key={t.id} onClick={() => setCustomExtraConfig(c => ({ ...c, type: t.id }))}
-                      className={`py-2 rounded-lg text-[10px] font-bold border transition-all ${
-                        customExtraConfig.type === t.id 
-                          ? `bg-${t.color}-500/20 text-${t.color}-400 border-${t.color}-500` 
-                          : 'bg-white/5 text-slate-400 border-white/5'
-                      }`}>
+                      className={`py-2 rounded-lg text-[10px] font-bold border transition-all ${customExtraConfig.type === t.id
+                        ? `bg-${t.color}-500/20 text-${t.color}-400 border-${t.color}-500`
+                        : 'bg-white/5 text-slate-400 border-white/5'
+                        }`}>
                       {t.label}
                     </button>
                   ))}
@@ -1829,11 +1831,10 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
               {customExtraConfig.type === 'noball' && (
                 <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
                   <span className="text-xs text-slate-300">Runs off the bat?</span>
-                  <button 
+                  <button
                     onClick={() => setCustomExtraConfig(c => ({ ...c, isOffBat: !c.isOffBat }))}
-                    className={`px-3 py-1 rounded text-[10px] font-bold border transition-all ${
-                      customExtraConfig.isOffBat ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500' : 'bg-white/5 text-slate-500 border-white/5'
-                    }`}>
+                    className={`px-3 py-1 rounded text-[10px] font-bold border transition-all ${customExtraConfig.isOffBat ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500' : 'bg-white/5 text-slate-500 border-white/5'
+                      }`}>
                     {customExtraConfig.isOffBat ? 'YES' : 'NO'}
                   </button>
                 </div>
@@ -1856,9 +1857,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   <div className="flex flex-wrap gap-1.5 ml-auto justify-end max-w-[120px]">
                     {[0, 1, 2, 3, 4, 6].map(n => (
                       <button key={n} onClick={() => setCustomExtraConfig(c => ({ ...c, runs: n }))}
-                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${
-                          customExtraConfig.runs === n ? 'bg-indigo-500/30 text-indigo-500 border border-indigo-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
-                        }`}>
+                        className={`w-8 h-8 rounded text-xs font-bold transition-all ${customExtraConfig.runs === n ? 'bg-indigo-500/30 text-indigo-500 border border-indigo-500/50' : 'bg-white/5 text-slate-400 border border-white/5'
+                          }`}>
                         {n}
                       </button>
                     ))}
@@ -1872,7 +1872,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                 className="btn bg-white/5 text-slate-400 py-3 text-sm font-bold border border-white/5 hover:bg-white/10 transition-all">
                 Cancel
               </button>
-              <button onClick={() => { 
+              <button onClick={() => {
                 const { type, runs, isOffBat } = customExtraConfig;
                 let totalRuns = runs;
                 let label = '';
@@ -1882,7 +1882,7 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
 
                 if (type === 'wide') {
                   totalRuns = runs + 1;
-                  label = runs === 0 ? 'Wd' : `Wd${runs+1}`;
+                  label = runs === 0 ? 'Wd' : `Wd${runs + 1}`;
                 } else if (type === 'noball') {
                   totalRuns = runs + 1;
                   label = runs === 0 ? 'NB' : `NB${runs}`; // Simplified label
@@ -1893,8 +1893,8 @@ export default function MatchControl({ matchData, emit, teams = [] }) {
                   label = `${type === 'bye' ? 'B' : 'LB'}${runs}`;
                 }
 
-                addRuns(totalRuns, isLegal, isExtra, label, type, offBatRuns); 
-                setShowCustomExtraModal(false); 
+                addRuns(totalRuns, isLegal, isExtra, label, type, offBatRuns);
+                setShowCustomExtraModal(false);
               }}
                 className="btn bg-gradient-to-r from-indigo-500 to-violet-500 text-main py-3 text-sm font-bold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/20">
                 Add Extra
